@@ -20,11 +20,18 @@ const WS_URL = `${WS_BASE}/driver-monitoring`;
 export default function Screen() {
   const { localStream } = useCamera();
 
-  const { clientId, startConnection, cleanup, transportStatus, connectionStatus, onDataMessage } =
-    useWebRTC({
-      url: WS_URL,
-      stream: localStream,
-    });
+  const {
+    clientId,
+    startConnection,
+    cleanup,
+    transportStatus,
+    connectionStatus,
+    onDataMessage,
+    error,
+  } = useWebRTC({
+    url: WS_URL,
+    stream: localStream,
+  });
 
   const [isRunning, setIsRunning] = useState(false);
   const [inferenceData, setInferenceData] = useState<Record<string, any>>({});
@@ -68,6 +75,12 @@ export default function Screen() {
         <Text>Connection: {connectionStatus}</Text>
         <Text>Transport: {transportStatus}</Text>
       </View>
+
+      {error && (
+        <View className="mb-2">
+          <Text className="text-xs text-destructive">{error}</Text>
+        </View>
+      )}
 
       <View className="mb-4 h-96 w-full">
         <MediaStreamView stream={localStream} />
