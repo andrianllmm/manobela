@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 
+import cv2
 from aiortc import (
     RTCConfiguration,
     RTCIceServer,
@@ -46,11 +47,23 @@ async def create_peer_connection(client_id: str) -> RTCPeerConnection:
                 while True:
                     try:
                         frame = await track.recv()
-                        dummy_result = {"frame_id": frame.time, "inference": "ok"}
+
+                        img = frame.to_ndarray(format="bgr24")
+
+                        # Temporary dummy processing
+                        # TODO: Implement real processing
+                        mean_color = img.mean(axis=(0, 1))  # B, G, R
+                        brightness = float(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY).mean())
+
+                        result = {
+                            "frame_id": getattr(frame, "pts", None),
+                            "mean_color": mean_color.tolist(),
+                            "brightness": brightness,
+                        }
 
                         channel = manager.data_channels.get(client_id)
                         if channel and channel.readyState == "open":
-                            channel.send(json.dumps(dummy_result))
+                            channel.send(json.dumps(result))
 
                     except Exception as e:
                         logger.error("Error processing video frame: %s", e)

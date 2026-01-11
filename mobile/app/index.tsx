@@ -74,7 +74,7 @@ export default function Screen() {
       </View>
 
       <View className="mb-4">
-        <Text>Latest Inference:</Text>
+        <Text>Inference:</Text>
         <Text>{inferenceData ? JSON.stringify(inferenceData, null, 2) : 'No data yet'}</Text>
       </View>
 
