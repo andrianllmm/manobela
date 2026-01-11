@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 from typing import Dict, Optional
@@ -15,6 +16,7 @@ class ConnectionManager:
         self.active_connections: Dict[str, WebSocket] = {}
         self.peer_connections: Dict[str, RTCPeerConnection] = {}
         self.data_channels: Dict[str, RTCDataChannel] = {}
+        self.frame_tasks: Dict[str, asyncio.Task] = {}
 
     async def connect(self, websocket: WebSocket, client_id: str) -> None:
         """Accept a WebSocket connection and register it."""
@@ -29,6 +31,11 @@ class ConnectionManager:
         self.active_connections.pop(client_id, None)
         pc = self.peer_connections.pop(client_id, None)
         self.data_channels.pop(client_id, None)
+
+        task = self.frame_tasks.pop(client_id, None)
+        if task and not task.done():
+            task.cancel()
+            logger.info("Cancelled frame processing task for %s", client_id)
 
         if pc:
             # Async close should be handled elsewhere
