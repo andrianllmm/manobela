@@ -70,14 +70,14 @@ export default function Screen() {
     <ScrollView className="flex-1 px-4">
       <Stack.Screen options={SCREEN_OPTIONS} />
 
-      <View className="mb-2">
+      <View className="mb-4">
         <Text>Client ID: {clientId ?? 'Not connected'}</Text>
         <Text>Connection: {connectionStatus}</Text>
         <Text>Transport: {transportStatus}</Text>
       </View>
 
       {error && (
-        <View className="mb-2">
+        <View className="mb-4">
           <Text className="text-xs text-destructive">{error}</Text>
         </View>
       )}
@@ -86,14 +86,14 @@ export default function Screen() {
         <MediaStreamView stream={localStream} />
       </View>
 
+      <Button onPress={handleToggle} disabled={isDisabled} className="mb-4">
+        <Text className="max-w-fit">{buttonText}</Text>
+      </Button>
+
       <View className="mb-4">
         <Text>Inference:</Text>
         <Text>{inferenceData ? JSON.stringify(inferenceData, null, 2) : 'No data yet'}</Text>
       </View>
-
-      <Button onPress={handleToggle} disabled={isDisabled} className="w-full">
-        <Text className="text-center">{buttonText}</Text>
-      </Button>
     </ScrollView>
   );
 }

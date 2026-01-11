@@ -1,9 +1,6 @@
 import asyncio
-import json
 import logging
-from datetime import datetime, timezone
 
-import cv2
 from aiortc import (
     RTCConfiguration,
     RTCIceServer,
@@ -14,6 +11,7 @@ from aiortc.sdp import candidate_from_sdp
 
 from app.models.webrtc import ICECandidateMessage, MessageType, SDPMessage
 from app.services.connection_manager import manager
+from app.services.video_precessor import process_video_frames
 
 logger = logging.getLogger(__name__)
 
@@ -43,66 +41,7 @@ async def create_peer_connection(client_id: str) -> RTCPeerConnection:
         logger.info("Track received: %s kind=%s", track.kind, track.kind)
 
         if track.kind == "video":
-
-            async def process_frames():
-                frame_count = 0
-                try:
-                    while True:
-                        try:
-                            frame = await track.recv()
-                            frame_count += 1
-
-                            img = frame.to_ndarray(format="bgr24")
-
-                            # Temporary dummy processing
-                            # TODO: Implement real processing
-                            mean_color = img.mean(axis=(0, 1))  # B, G, R
-                            brightness = float(
-                                cv2.cvtColor(img, cv2.COLOR_BGR2GRAY).mean()
-                            )
-
-                            result = {
-                                "timestamp": datetime.now(timezone.utc).isoformat(),
-                                "frame_id": getattr(frame, "pts", None),
-                                "frame_count": frame_count,
-                                "mean_color": mean_color.tolist(),
-                                "brightness": brightness,
-                            }
-
-                            channel = manager.data_channels.get(client_id)
-                            if channel and channel.readyState == "open":
-                                channel.send(json.dumps(result))
-                            else:
-                                logger.warning(
-                                    "Data channel not ready for %s", client_id
-                                )
-
-                        except asyncio.CancelledError:
-                            logger.info("Frame processing cancelled for %s", client_id)
-                            raise  # Re-raise to exit cleanly
-
-                        except Exception as e:
-                            logger.error(
-                                "Error processing single frame for %s: %s", client_id, e
-                            )
-                            # Continue processing next frame
-                            continue
-
-                except asyncio.CancelledError:
-                    logger.info(
-                        "Frame processing task cancelled for %s (processed %d frames)",
-                        client_id,
-                        frame_count,
-                    )
-                except Exception as e:
-                    logger.error(
-                        "Fatal error in frame processing for %s: %s", client_id, e
-                    )
-                finally:
-                    logger.info("Frame processing stopped for %s", client_id)
-
-            # Store task reference for cleanup
-            task = asyncio.create_task(process_frames())
+            task = asyncio.create_task(process_video_frames(client_id, track))
             manager.frame_tasks[client_id] = task
 
     @pc.on("datachannel")

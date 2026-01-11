@@ -13,7 +13,7 @@ export const MediaStreamView = ({ stream, style, mirror = true }: MediaStreamVie
   return (
     <RTCView
       streamURL={stream.toURL()}
-      objectFit="cover"
+      objectFit="contain"
       style={[{ width: '100%', height: '100%' }, style]}
       mirror={mirror}
     />
