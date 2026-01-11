@@ -35,6 +35,7 @@ export default function Screen() {
     stream: localStream,
   });
 
+  // Start/stop toggle
   const handleToggle = useCallback(() => {
     if (sessionState === 'idle') {
       start();

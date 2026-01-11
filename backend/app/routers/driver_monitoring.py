@@ -21,13 +21,15 @@ router = APIRouter(tags=["driver_monitoring"])
 @router.websocket("/ws/driver-monitoring")
 async def driver_monitoring(websocket: WebSocket):
     """
-    WebSocket endpoint for WebRTC signaling.
+    WebSocket endpoint that handles WebRTC signaling messages for a single client.
     """
-    # Generate client ID
+
+    # Generate a unique identifier for this client session
     client_id = str(uuid.uuid4())
     await manager.connect(websocket, client_id)
 
     try:
+        # Initial handshake message so the client knows its assigned I
         await manager.send_message(
             client_id,
             {
@@ -38,6 +40,7 @@ async def driver_monitoring(websocket: WebSocket):
         )
 
         while True:
+            # Receive a message from the client
             raw = await websocket.receive_text()
             try:
                 message = json.loads(raw)
@@ -48,6 +51,7 @@ async def driver_monitoring(websocket: WebSocket):
             msg_type = message.get("type")
             logger.info("Received %s from %s", msg_type, client_id)
 
+            # Route signaling messages based on type
             if msg_type == MessageType.OFFER.value:
                 await handle_offer(client_id, message)
 
@@ -67,6 +71,7 @@ async def driver_monitoring(websocket: WebSocket):
         logger.exception("WebSocket error for %s: %s", client_id, exc)
 
     finally:
+        # Ensure peer connection and background tasks are cleaned up
         pc = manager.disconnect(client_id)
         if pc:
             await pc.close()

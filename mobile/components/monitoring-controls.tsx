@@ -13,8 +13,10 @@ export const MonitoringControls = ({
   hasCamera,
   onToggle,
 }: MonitoringControlsProps) => {
+  // Disable during transitions or without camera
   const isDisabled = !hasCamera || sessionState === 'starting' || sessionState === 'stopping';
 
+  // Button label based on session state
   const buttonText = (() => {
     if (!hasCamera) return 'No camera';
     if (sessionState === 'starting') return 'Connecting...';

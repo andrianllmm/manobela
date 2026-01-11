@@ -18,19 +18,24 @@ logger = logging.getLogger(__name__)
 
 async def create_peer_connection(client_id: str) -> RTCPeerConnection:
     """
-    Create a new RTCPeerConnection for a client and register it with the manager.
+    Initialize a WebRTC peer connection and wire up all event handlers.
     """
     rtc_config = RTCConfiguration(
         iceServers=[
             RTCIceServer(urls="stun:stun.l.google.com:19302"),
         ]
     )
+
     pc = RTCPeerConnection(rtc_config)
+
     manager.peer_connections[client_id] = pc
 
     @pc.on("connectionstatechange")
     async def on_connectionstatechange():
+        # Log connection state changes
         logger.info("Connection state for %s: %s", client_id, pc.connectionState)
+
+        # Close peer connection if it's in a failed or closed state
         if pc.connectionState in ["failed", "closed", "disconnected"]:
             removed_pc = manager.disconnect(client_id)
             if removed_pc:
@@ -41,13 +46,16 @@ async def create_peer_connection(client_id: str) -> RTCPeerConnection:
         logger.info("Track received: %s kind=%s", track.kind, track.kind)
 
         if track.kind == "video":
+            # Start processing video frames in a background task
             task = asyncio.create_task(process_video_frames(client_id, track))
             manager.frame_tasks[client_id] = task
 
     @pc.on("datachannel")
     def on_datachannel(channel):
         logger.info("Data channel established: %s", channel.label)
-        manager.data_channels[client_id] = channel  # store the channel
+
+        # Register the channel
+        manager.data_channels[client_id] = channel
 
         @channel.on("message")
         def on_message(message):
@@ -55,6 +63,7 @@ async def create_peer_connection(client_id: str) -> RTCPeerConnection:
 
     @pc.on("icecandidate")
     async def on_icecandidate(candidate):
+        # Forward local ICE candidates to the client
         if candidate:
             await manager.send_message(
                 client_id,
@@ -134,7 +143,7 @@ async def handle_answer(client_id: str, message: dict):
 
 async def handle_ice_candidate(client_id: str, message: dict):
     """
-    Add an ICE candidate received from a client.
+    Add a remote ICE candidate to the active peer connection.
     """
     try:
         ice_msg = ICECandidateMessage(**message)

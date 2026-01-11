@@ -17,6 +17,7 @@ export const ConnectionStatus = ({
   transportStatus,
   error,
 }: ConnectionStatusProps) => {
+  // Color based on session state
   const statusColor = (() => {
     if (sessionState === 'active') return 'text-green-600';
     if (sessionState === 'starting' || sessionState === 'stopping') return 'text-yellow-600';

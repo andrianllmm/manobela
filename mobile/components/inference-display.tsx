@@ -8,6 +8,7 @@ interface InferenceDisplayProps {
 }
 
 export const InferenceDisplay = ({ sessionState, data }: InferenceDisplayProps) => {
+  // Hide if not active
   if (sessionState !== 'active') return null;
 
   return (

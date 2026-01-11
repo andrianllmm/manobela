@@ -7,6 +7,9 @@ type MediaStreamViewProps = {
   mirror?: boolean;
 };
 
+/**
+ * Displays a MediaStream (camera view).
+ */
 export const MediaStreamView = ({ stream, style, mirror = true }: MediaStreamViewProps) => {
   if (!stream) return null;
 

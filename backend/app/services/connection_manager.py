@@ -10,7 +10,9 @@ logger = logging.getLogger(__name__)
 
 
 class ConnectionManager:
-    """Tracks active WebSocket connections and associated RTCPeerConnections."""
+    """
+    Central registry for active WebSocket clients and their WebRTC resources.
+    """
 
     def __init__(self):
         self.active_connections: Dict[str, WebSocket] = {}
@@ -27,7 +29,7 @@ class ConnectionManager:
         )
 
     def disconnect(self, client_id: str) -> Optional[RTCPeerConnection]:
-        """Remove a client and its peer connection (if any). Returns the removed RTCPeerConnection."""
+        """Remove all resources associated with a client and cancel background tasks."""
         self.active_connections.pop(client_id, None)
         pc = self.peer_connections.pop(client_id, None)
         self.data_channels.pop(client_id, None)
@@ -49,7 +51,7 @@ class ConnectionManager:
         return pc
 
     async def send_message(self, client_id: str, message: dict) -> None:
-        """Send a JSON message to a specific client."""
+        """Send a JSON-serializable message to a client over WebSocket."""
         ws = self.active_connections.get(client_id)
         if ws:
             try:
@@ -58,7 +60,7 @@ class ConnectionManager:
                 logger.error("Failed to send message to %s: %s", client_id, e)
 
     async def send_data(self, client_id: str, message: dict) -> None:
-        """Send a JSON message via the WebRTC data channel."""
+        """Send a JSON message to the client via its WebRTC data channel."""
         channel = self.data_channels.get(client_id)
         if channel and channel.readyState == "open":
             try:
@@ -77,5 +79,5 @@ class ConnectionManager:
                 logger.error("Failed to broadcast to %s: %s", client_id, e)
 
 
-# Singleton instance
+# Shared singleton used across the application
 manager = ConnectionManager()

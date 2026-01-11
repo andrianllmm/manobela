@@ -12,11 +12,16 @@ logger = logging.getLogger(__name__)
 
 
 async def process_video_frames(client_id: str, track):
+    """
+    Receive video frames from a WebRTC track, perform lightweight processing,
+    and stream results back over the data channel.
+    """
+
     frame_count = 0
     skipped_frames = 0
     last_process_time = 0
 
-    TARGET_INTERVAL_MS = 66  # Process every ~66ms = ~15fps processing rate
+    TARGET_INTERVAL_MS = 66  # ~15 FPS processing target
     MAX_WIDTH = 640
 
     try:
@@ -26,11 +31,11 @@ async def process_video_frames(client_id: str, track):
                 frame_count += 1
                 current_time = time.time() * 1000  # ms
 
-                # Frame skipping strategy for high FPS inputs
+                # Skip frames to maintain a stable processing rate
                 time_since_last = current_time - last_process_time
                 if time_since_last < TARGET_INTERVAL_MS and frame_count > 1:
                     skipped_frames += 1
-                    continue  # Skip this frame to maintain target FPS
+                    continue
 
                 last_process_time = current_time
 
@@ -44,7 +49,7 @@ async def process_video_frames(client_id: str, track):
                         img.shape[0],
                     )
 
-                # Convert frame
+                # Downscale large frames
                 img = frame.to_ndarray(format="bgr24")
                 h, w = img.shape[:2]
 
@@ -58,7 +63,7 @@ async def process_video_frames(client_id: str, track):
                         "Resized frame from %dx%d to %dx%d", w, h, new_w, new_h
                     )
 
-                # Dummy processing for now
+                # Placeholder image analysis
                 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
                 brightness = float(gray.mean())
                 mean_color = img.mean(axis=(0, 1))
@@ -74,14 +79,14 @@ async def process_video_frames(client_id: str, track):
                     "mean_color": mean_color.tolist(),
                 }
 
-                # Send via data channel
+                # Send processing output to the client
                 channel = manager.data_channels.get(client_id)
                 if channel and channel.readyState == "open":
                     channel.send(json.dumps(result))
                 else:
                     logger.warning("Data channel not ready for %s", client_id)
 
-                # Log processing stats every 100 frames
+                # Periodic logging of processing stats
                 if frame_count % 100 == 0:
                     effective_fps = (frame_count - skipped_frames) / (frame_count / 15)
                     logger.info(

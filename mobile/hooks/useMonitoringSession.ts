@@ -5,12 +5,16 @@ import { MediaStream } from 'react-native-webrtc';
 export type SessionState = 'idle' | 'starting' | 'active' | 'stopping';
 
 interface UseMonitoringSessionProps {
+  // WebSocket signaling endpoint
   url: string;
+
+  // Local media stream (camera)
   stream: MediaStream | null;
 }
 
 interface UseMonitoringSessionReturn {
   sessionState: SessionState;
+  // Latest data from the session
   inferenceData: Record<string, any>;
   clientId: string | null;
   transportStatus: string;
@@ -21,10 +25,15 @@ interface UseMonitoringSessionReturn {
   stop: () => void;
 }
 
+/**
+ * Manages the lifecycle of a driver monitoring session.
+ * It wraps WebRTC connection and data channel logic for higher-level session handling.
+ */
 export const useMonitoringSession = ({
   url,
   stream,
 }: UseMonitoringSessionProps): UseMonitoringSessionReturn => {
+  // Low-level WebRTC management
   const {
     clientId,
     startConnection,
@@ -35,10 +44,13 @@ export const useMonitoringSession = ({
     error,
   } = useWebRTC({ url, stream });
 
+  // Tracks session lifecycle
   const [sessionState, setSessionState] = useState<SessionState>('idle');
+
+  // Stores latest data
   const [inferenceData, setInferenceData] = useState<Record<string, any>>({});
 
-  // Sync session state with WebRTC connection status
+  // Sync session state with WebRTC connection
   useEffect(() => {
     if (connectionStatus === 'connected' && sessionState === 'starting') {
       setSessionState('active');
@@ -49,7 +61,7 @@ export const useMonitoringSession = ({
     }
   }, [connectionStatus, sessionState]);
 
-  // Handle incoming inference data
+  // Subscribe to data channel messages
   useEffect(() => {
     const handler = (msg: any) => {
       setInferenceData(msg);
@@ -58,6 +70,7 @@ export const useMonitoringSession = ({
     onDataMessage(handler);
   }, [onDataMessage]);
 
+  // Starts the monitoring session.
   const start = useCallback(() => {
     if (sessionState !== 'idle') return;
 
@@ -70,6 +83,7 @@ export const useMonitoringSession = ({
     }
   }, [sessionState, startConnection]);
 
+  // Stops the monitoring session.
   const stop = useCallback(() => {
     if (sessionState !== 'active') return;
 
