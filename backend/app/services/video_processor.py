@@ -9,6 +9,7 @@ import mediapipe as mp
 from app.models.inference import InferenceData, Resolution
 from app.services.connection_manager import ConnectionManager
 from app.services.face_landmarks import ESSENTIAL_LANDMARKS
+from app.services.metrics.metric_manager import MetricManager
 from app.services.smoother import Smoother
 
 logger = logging.getLogger(__name__)
@@ -23,11 +24,13 @@ def process_video_frame(
     timestamp: str,
     img_bgr,
     face_landmarker,
+    metric_manager: MetricManager,
     smoother: Smoother,
 ) -> InferenceData:
     """
     Process a single video frame.
     """
+
     h, w = img_bgr.shape[:2]
 
     # Resize if needed
@@ -44,26 +47,34 @@ def process_video_frame(
     timestamp_ms = int(time.time() * 1000)
     detection_result = face_landmarker.detect_for_video(mp_image, timestamp_ms)
 
-    raw_landmarks = None
+    raw_landmarks: list[tuple[float, float]] | None = None
+    essential_landmarks: list[float] | None = None
+
     if detection_result.face_landmarks:
         face_landmarks = detection_result.face_landmarks[0]
-        indices = (
-            range(len(face_landmarks)) if RENDER_LANDMARKS_FULL else ESSENTIAL_LANDMARKS
-        )
 
-        # Flatten coordinates
-        raw_landmarks = [
+        # Full landmarks as (x, y) tuples
+        raw_landmarks = [(lm.x, lm.y) for lm in face_landmarks]
+
+        # Filter only essential landmarks
+        essential_landmarks = [
             coord
-            for idx in indices
+            for idx in ESSENTIAL_LANDMARKS
             for coord in (face_landmarks[idx].x, face_landmarks[idx].y)
         ]
 
+    # Update metrics using full landmarks
+    metrics = metric_manager.update({"landmarks": raw_landmarks})
+
     # Apply smoothing
-    smoothed_landmarks = smoother.update(raw_landmarks)
+    smoothed_landmarks = (
+        smoother.update(essential_landmarks) if essential_landmarks else None
+    )
 
     return InferenceData(
         timestamp=timestamp,
         resolution=Resolution(width=w, height=h),
+        metrics=metrics,
         face_landmarks=smoothed_landmarks,
     )
 
@@ -81,6 +92,7 @@ async def process_video_frames(
     frame_count = 0
     skipped_frames = 0
     last_process_time = 0
+    metric_manager = MetricManager()
     smoother = Smoother()
 
     try:
@@ -112,7 +124,9 @@ async def process_video_frames(
                     )
 
                 timestamp = datetime.now(timezone.utc).isoformat()
-                result = process_video_frame(timestamp, img, face_landmarker, smoother)
+                result = process_video_frame(
+                    timestamp, img, face_landmarker, metric_manager, smoother
+                )
 
                 # Send result
                 channel = connection_manager.data_channels.get(client_id)

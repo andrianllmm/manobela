@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
@@ -18,8 +18,11 @@ class InferenceData(BaseModel):
         face_landmarks: Flat array of facial landmarks [x1, y1, x2, y2, ...]
                         or None if no face detected.
                         Coordinates are normalized (0-1 range).
+        metrics: Optional dictionary of metrics calculated for the frame
+                 (e.g., eye closure, head pose, etc.)
     """
 
     timestamp: str
     resolution: Resolution
     face_landmarks: Optional[List[float]] = None
+    metrics: Optional[Dict[str, Any]] = None

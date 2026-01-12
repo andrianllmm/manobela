@@ -16,4 +16,9 @@ export interface InferenceData {
    * Coordinates are normalized (0-1 range)
    */
   face_landmarks: number[] | null;
+
+  /**
+   * Metrics calculated for this frame
+   */
+  metrics: Record<string, any> | null;
 }
