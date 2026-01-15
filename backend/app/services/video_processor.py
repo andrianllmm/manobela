@@ -152,6 +152,12 @@ async def process_video_frames(
                 # Advance schedule to maintain cadence
                 last_process_time = next_process_time
 
+                # Get data channel
+                channel = connection_manager.data_channels.get(client_id)
+                if not channel or channel.readyState != "open":
+                    logger.info("Data channel closed for %s; skipping frame", client_id)
+                    break
+
                 # Convert frame to numpy array
                 img = frame.to_ndarray(format="bgr24")
                 h, w = img.shape[:2]
@@ -180,14 +186,6 @@ async def process_video_frames(
                 )
 
                 # Send result
-                channel = connection_manager.data_channels.get(client_id)
-                if not channel or channel.readyState != "open":
-                    logger.info(
-                        "Data channel closed for %s; stopping frame processing",
-                        client_id,
-                    )
-                    break
-
                 try:
                     channel.send(result.model_dump_json())
                 except Exception:
