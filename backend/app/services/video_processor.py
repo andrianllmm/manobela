@@ -25,6 +25,10 @@ logger = logging.getLogger(__name__)
 # Use a global lock to prevent concurrent access.
 face_landmarker_lock = threading.Lock()
 
+# YOLO ONNX model is NOTthread-safe.
+# Use a global lock to prevent concurrent access.
+object_detector_lock = threading.Lock()
+
 TARGET_FPS = max(1, settings.target_fps)
 TARGET_INTERVAL_SEC = 1 / TARGET_FPS
 MAX_WIDTH = 480
@@ -81,7 +85,8 @@ def process_video_frame(
         ]
 
     # Detect objects
-    object_detections = object_detector.detect(img_bgr, normalize=True)
+    with object_detector_lock:
+        object_detections = object_detector.detect(img_bgr, normalize=True)
 
     # Update metrics
     frame_data = {}
