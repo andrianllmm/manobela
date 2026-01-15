@@ -5,14 +5,12 @@ import { FacialLandmarkOverlay } from './facial-landmark-overlay';
 import { SessionState } from '@/hooks/useMonitoringSession';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
+import { InferenceData } from '@/types/inference';
 
 type MediaStreamViewProps = {
   stream: MediaStream | null;
   sessionState: SessionState;
-  inferenceData?: {
-    face_landmarks?: number[] | null;
-    resolution?: { width: number; height: number };
-  };
+  inferenceData?: InferenceData | null;
   style?: object;
   mirror?: boolean;
 };
