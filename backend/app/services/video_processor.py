@@ -98,8 +98,9 @@ async def process_video_frames(
     and stream results back over the data channel.
     """
     frame_count = 0
-    skipped_frames = 0
-    last_process_time = 0
+    processed_frames = 0
+    start_time = time.perf_counter()
+    last_process_time = time.perf_counter()
     metric_manager = MetricManager()
     smoother = Smoother()
 
@@ -120,15 +121,27 @@ async def process_video_frames(
                     break
 
                 frame_count += 1
-                current_time = time.time() * 1000  # ms
 
-                # Skip frames to maintain a stable processing rate
-                time_since_last = current_time - last_process_time
-                if time_since_last < TARGET_INTERVAL_MS and frame_count > 1:
-                    skipped_frames += 1
-                    continue
+                # Schedule frame processing at a fixed interval to avoid drift.
+                # The next processing time is derived from the previous scheduled time,
+                # not the actual processing completion time.
+                next_process_time = last_process_time + TARGET_INTERVAL_MS / 1000
+                sleep_duration = next_process_time - time.perf_counter()
 
-                last_process_time = current_time
+                if sleep_duration > 0:
+                    # Yield control until the scheduled processing time
+                    await asyncio.sleep(sleep_duration)
+                else:
+                    # Processing took longer than the target interval;
+                    # skip sleeping to prevent accumulating delay
+                    logger.debug(
+                        "Client %s: Processing is behind schedule by %.2f ms",
+                        client_id,
+                        -sleep_duration * 1000,
+                    )
+
+                # Advance schedule to maintain cadence
+                last_process_time = next_process_time
 
                 # Convert frame to numpy array
                 img = frame.to_ndarray(format="bgr24")
@@ -143,8 +156,8 @@ async def process_video_frames(
                         h,
                     )
 
+                # Process frame
                 timestamp = datetime.now(timezone.utc).isoformat()
-
                 result = await asyncio.get_running_loop().run_in_executor(
                     executor,
                     functools.partial(
@@ -175,15 +188,18 @@ async def process_video_frames(
                     )
                     break
 
-                # Periodic logging of processing stats
-                if frame_count % 100 == 0:
-                    effective_fps = (frame_count - skipped_frames) / (frame_count / 10)
+                # Update counters
+                processed_frames += 1
+
+                # Log FPS every 100 frames
+                if processed_frames % 100 == 0:
+                    elapsed_sec = time.perf_counter() - start_time
+                    fps = processed_frames / elapsed_sec if elapsed_sec > 0 else 0
                     logger.info(
-                        "Client %s: Processed %d/%d frames (%.1f fps effective)",
+                        "Client %s: Processed %d frames (%.2f fps)",
                         client_id,
-                        frame_count - skipped_frames,
-                        frame_count,
-                        effective_fps,
+                        processed_frames,
+                        fps,
                     )
 
             except asyncio.CancelledError:
