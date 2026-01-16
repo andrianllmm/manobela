@@ -45,7 +45,7 @@ class YawnMetric(BaseMetric):
         self.mar_close_threshold = (
             mar_close_threshold
             if mar_close_threshold is not None
-            else mar_threshold * 0.9
+            else mar_threshold * 1.1
         )
 
         self.min_duration_frames = min_duration_frames
