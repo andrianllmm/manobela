@@ -81,51 +81,54 @@ class YawnMetric(BaseMetric):
         vertical = _dist(top, bottom)
         return vertical / horizontal
 
-    def update(self, frame_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        landmarks = frame_data.get("landmarks")
-        if not landmarks:
-            # Consistent output shape
-            self.reset()
-            return None
+def update(self, frame_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    landmarks = frame_data.get("landmarks")
 
-        mar = self._compute_mar(landmarks)
-        smoothed = self.smoother.update([mar] if mar is not None else None)
+    if not landmarks:
+        # Do NOT reset state on transient landmark dropouts
+        # Preserve yawn progress and active state
+        return {
+            "mar": None,
+            "yawning": self._yawn_active,
+            "yawn_progress": min(
+                self._open_counter / self.min_duration_frames,
+                1.0,
+            ),
+        }
 
-        if smoothed is None:
-            return {
-                "mar": None,
-                "yawning": False,
-                "yawn_progress": 0.0,
-            }
+    mar = self._compute_mar(landmarks)
+    smoothed = self.smoother.update([mar] if mar is not None else None)
 
-        mar_value = smoothed[0]
+    if smoothed is None:
+        return {
+            "mar": None,
+            "yawning": self._yawn_active,
+            "yawn_progress": min(
+                self._open_counter / self.min_duration_frames,
+                1.0,
+            ),
+        }
 
-        # Hysteresis logic
-        if not self._yawn_active:
-            if mar_value > self.mar_threshold:
-                self._open_counter += 1
-            else:
-                self._open_counter = 0
-                self._yawn_active = False
+    mar_value = smoothed[0]
 
-            if self._open_counter >= self.min_duration_frames:
-                self._yawn_active = True
-        else:
-            # Once active, keep it until we clearly close
-            if mar_value < self.mar_close_threshold:
-                self._yawn_active = False
-                self._open_counter = 0 # Reset after it ends
+    if mar_value > self.mar_threshold:
+        self._open_counter += 1
+    else:
+        self._open_counter = 0
+        self._yawn_active = False
 
-        progress = min(
+    if self._open_counter >= self.min_duration_frames:
+        self._yawn_active = True
+
+    return {
+        "mar": mar_value,
+        "yawning": self._yawn_active,
+        "yawn_progress": min(
             self._open_counter / self.min_duration_frames,
             1.0,
-        )
+        ),
+    }
 
-        return {
-            "mar": mar_value,
-            "yawning": self._yawn_active,
-            "yawn_progress": progress,
-        }
 
     def reset(self):
         self.smoother.reset()
