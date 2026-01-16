@@ -19,7 +19,11 @@ def get_connection_manager_ws(websocket: WebSocket) -> ConnectionManager:
     return websocket.app.state.connection_manager
 
 
-def get_face_landmarker(websocket: WebSocket) -> "vision.FaceLandmarker":
+def get_face_landmarker(request: Request) -> "vision.FaceLandmarker":
+    return request.app.state.face_landmarker
+
+
+def get_face_landmarker_ws(websocket: WebSocket) -> "vision.FaceLandmarker":
     return websocket.app.state.face_landmarker
 
 
@@ -28,3 +32,6 @@ ConnectionManagerWsDep = Annotated[
     ConnectionManager, Depends(get_connection_manager_ws)
 ]
 FaceLandmarkerDep = Annotated["vision.FaceLandmarker", Depends(get_face_landmarker)]
+FaceLandmarkerDepWs = Annotated[
+    "vision.FaceLandmarker", Depends(get_face_landmarker_ws)
+]

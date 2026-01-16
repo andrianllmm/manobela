@@ -8,7 +8,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from app.core.dependencies import (
     ConnectionManagerDep,
     ConnectionManagerWsDep,
-    FaceLandmarkerDep,
+    FaceLandmarkerDepWs,
 )
 from app.models.webrtc import MessageType
 from app.services.webrtc_handler import (
@@ -26,7 +26,7 @@ router = APIRouter(tags=["driver_monitoring"])
 async def driver_monitoring(
     websocket: WebSocket,
     connection_manager: ConnectionManagerWsDep,
-    face_landmarker: FaceLandmarkerDep,
+    face_landmarker: FaceLandmarkerDepWs,
 ):
     """
     WebSocket endpoint that handles WebRTC signaling messages for a single client.
