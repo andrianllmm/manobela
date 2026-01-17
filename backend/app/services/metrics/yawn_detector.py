@@ -58,7 +58,7 @@ class YawnMetric(BaseMetric):
         self.mar_close_threshold = (
             mar_close_threshold
             if mar_close_threshold is not None
-            else mar_threshold * 1.1
+            else mar_threshold * 0.9
         )
 
         self.min_duration_frames = min_duration_frames
@@ -89,7 +89,10 @@ class YawnMetric(BaseMetric):
             }
 
         mar = _compute_mar(self, landmarks)
-        smoothed = self.smoother.update([mar] if mar is not None else None)
+        if mar is None:
+            smoothed = None
+        else:
+            smoothed = self.smoother.update([mar])
 
         if smoothed is None:
             return {
@@ -108,6 +111,9 @@ class YawnMetric(BaseMetric):
         elif mar_value < self.mar_close_threshold:
             self._open_counter = 0
             self._yawn_active = False
+        else:
+            return None
+
 
         if self._open_counter >= self.min_duration_frames:
             self._yawn_active = True
