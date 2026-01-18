@@ -9,6 +9,7 @@ from app.core.dependencies import (
     ConnectionManagerDep,
     ConnectionManagerWsDep,
     FaceLandmarkerDepWs,
+    ObjectDetectorDepWs,
 )
 from app.models.webrtc import MessageType
 from app.services.webrtc_handler import (
@@ -27,6 +28,7 @@ async def driver_monitoring(
     websocket: WebSocket,
     connection_manager: ConnectionManagerWsDep,
     face_landmarker: FaceLandmarkerDepWs,
+    object_detector: ObjectDetectorDepWs,
 ):
     """
     WebSocket endpoint that handles WebRTC signaling messages for a single client.
@@ -62,7 +64,11 @@ async def driver_monitoring(
             # Route signaling messages based on type
             if msg_type == MessageType.OFFER.value:
                 await handle_offer(
-                    client_id, message, connection_manager, face_landmarker
+                    client_id,
+                    message,
+                    connection_manager,
+                    face_landmarker,
+                    object_detector,
                 )
 
             elif msg_type == MessageType.ANSWER.value:

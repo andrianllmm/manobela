@@ -2,7 +2,11 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter
 
-from app.core.dependencies import ConnectionManagerDep, FaceLandmarkerDep
+from app.core.dependencies import (
+    ConnectionManagerDep,
+    FaceLandmarkerDep,
+    ObjectDetectorDep,
+)
 
 router = APIRouter(
     prefix="/health",
@@ -27,5 +31,6 @@ async def liveness():
 async def readiness(
     connection_manager: ConnectionManagerDep,
     face_landmarker: FaceLandmarkerDep,
+    object_detector: ObjectDetectorDep,
 ):
     return {"status": "ready"}

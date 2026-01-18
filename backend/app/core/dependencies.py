@@ -7,6 +7,7 @@ from fastapi import Depends, Request, WebSocket
 from mediapipe.tasks.python import vision
 
 from app.services.connection_manager import ConnectionManager
+from app.services.object_detector import ObjectDetector
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +28,14 @@ def get_face_landmarker_ws(websocket: WebSocket) -> "vision.FaceLandmarker":
     return websocket.app.state.face_landmarker
 
 
+def get_object_detector(request: Request) -> ObjectDetector:
+    return request.app.state.object_detector
+
+
+def get_object_detector_ws(websocket: WebSocket) -> ObjectDetector:
+    return websocket.app.state.object_detector
+
+
 ConnectionManagerDep = Annotated[ConnectionManager, Depends(get_connection_manager)]
 ConnectionManagerWsDep = Annotated[
     ConnectionManager, Depends(get_connection_manager_ws)
@@ -35,3 +44,5 @@ FaceLandmarkerDep = Annotated["vision.FaceLandmarker", Depends(get_face_landmark
 FaceLandmarkerDepWs = Annotated[
     "vision.FaceLandmarker", Depends(get_face_landmarker_ws)
 ]
+ObjectDetectorDep = Annotated[ObjectDetector, Depends(get_object_detector)]
+ObjectDetectorDepWs = Annotated[ObjectDetector, Depends(get_object_detector_ws)]
