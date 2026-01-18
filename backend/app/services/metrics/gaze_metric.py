@@ -2,6 +2,8 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from app.services.metrics.base_metric import BaseMetric
+from app.services.metrics.utils.geometry import average_point
+from app.services.metrics.utils.calc import in_range
 
 logger = logging.getLogger(__name__)
 
@@ -20,11 +22,6 @@ class GazeMetric(BaseMetric):
     - X-axis: 0.0 (left) to 1.0 (right)
     - Y-axis: 0.0 (top) to 1.0 (bottom)
     - Both eyes are normalized to the same coordinate system
-
-    Attributes:
-        horizontal_range: Tuple defining valid horizontal gaze range
-        vertical_range: Tuple defining valid vertical gaze range
-        landmarks: Mapping of landmark indices for eye features
 
     Methods:
         update: Computes gaze metrics from frame data
@@ -52,7 +49,15 @@ class GazeMetric(BaseMetric):
     ) -> None:
         self.horizontal_range = horizontal_range
         self.vertical_range = vertical_range
-        self.landmarks = landmark_indices or self.LANDMARK_MAP
+
+        # Ensure required keys exist if custom provided
+        if landmark_indices is not None:
+            missing =[k for k in self.LANDMARK_MAP.keys() if k not in landmark_indices]
+            if missing:
+                raise ValueError(f"Missing landmark indices for: {missing}")
+
+        self.landmarks = dict(landmark_indices) if landmark_indices is not None else dict(self.LANDMARK_MAP)
+
 
     def update(self, frame_data: Dict[str, Any]) -> Optional[Dict[str, Union[float, bool, Dict]]]:
 
@@ -61,11 +66,10 @@ class GazeMetric(BaseMetric):
             logger.warning(f"Invalid frame data type: {type(frame_data)}")
             return None
         landmarks = frame_data.get("landmarks")
-        if isinstance(landmarks, (list, tuple)) and landmarks and isinstance(landmarks[0], (list, tuple)):
-             # detect whether it's a face list by looking one level deeper
-            if landmarks[0] and isinstance(landmarks[0][0], (list, tuple)):
-                logger.warning("Frame data contains multiple faces; Invalid format.")
-                landmarks =landmarks[0]  # Take the first face only
+
+        if not isinstance(landmarks, list):
+            return None
+
         if not landmarks:
             logger.debug("No landmarks in frame data")
             return None
@@ -93,14 +97,10 @@ class GazeMetric(BaseMetric):
             return None
 
         # Occlusion Handling for missing eye data
-        valid_ratios = [r for r in (left_ratio, right_ratio) if r is not None]
-        if not valid_ratios:
+        if left_ratio is None and right_ratio is None:
             return None
 
-        # Using the tuples in valid_ratios to compute average gaze
-
         # Handle right-eye normalization if needed
-        confidence = 1.0 if (left_ratio and right_ratio) else 0.5
 
         left_x = left_y = right_x = right_y = None
         if left_ratio:
@@ -108,12 +108,10 @@ class GazeMetric(BaseMetric):
         if right_ratio:
             right_x, right_y = right_ratio
 
-        in_ranges = GazeMetric.in_range
-
-        left_on_h = in_ranges(left_x, self.horizontal_range)
-        right_on_h = in_ranges(right_x, self.horizontal_range)
-        left_on_v = in_ranges(left_y, self.vertical_range)
-        right_on_v = in_ranges(right_y, self.vertical_range)
+        left_on_h = in_range(left_x, self.horizontal_range)
+        right_on_h = in_range(right_x, self.horizontal_range)
+        left_on_v = in_range(left_y, self.vertical_range)
+        right_on_v = in_range(right_y, self.vertical_range)
 
         # Treat "missing eye" as neutral for AND by checking only present eyes
         horizontal_ok = all(v is True for v in [x for x in (left_on_h, right_on_h) if x is not None])
@@ -125,8 +123,6 @@ class GazeMetric(BaseMetric):
 
         return {
             "gaze_on_road": gaze_on_road,
-            "gaze_alert": not gaze_on_road,
-            "confidence": confidence,
         }
 
     def reset(self) -> None:
@@ -146,13 +142,14 @@ class GazeMetric(BaseMetric):
         left_corner, right_corner = corners
         upper_lid, lower_lid = lids
 
-        iris_center = GazeMetric._average_point(landmarks, iris_indices)
+        iris_center = average_point(landmarks, iris_indices)
 
         width = landmarks[right_corner][0] - landmarks[left_corner][0]
         height = landmarks[lower_lid][1] - landmarks[upper_lid][1]
 
         if width == 0 or height == 0:
-            raise ZeroDivisionError("Eye width/height is zero")
+            logger.debug("Zero width/height in eye landmarks")
+            return None
 
         gaze_x = (iris_center[0] - landmarks[left_corner][0]) / width
         gaze_y = (iris_center[1] - landmarks[upper_lid][1]) / height
@@ -164,14 +161,4 @@ class GazeMetric(BaseMetric):
 
         return gaze_x, gaze_y
 
-    @staticmethod
-    def _average_point(landmarks, indices: tuple[int, ...]) -> tuple[float, float]:
-        xs = [landmarks[i][0] for i in indices]
-        ys = [landmarks[i][1] for i in indices]
-        return sum(xs) / len(xs), sum(ys) / len(ys)
 
-    @staticmethod
-    def in_range(val: Optional[float], rng: tuple[float, float]) -> Optional[bool]:
-        if val is None:
-            return None
-        return rng[0] <= val <= rng[1]
