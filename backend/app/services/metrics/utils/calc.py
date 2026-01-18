@@ -1,8 +1,6 @@
 from typing import Optional
 
 """
-Docstring for backend.app.services.metrics.utils.calc
-
 Documentation for calc.py insert below this line.
 
 Methods:
