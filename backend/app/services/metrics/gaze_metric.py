@@ -45,9 +45,17 @@ class GazeMetric(BaseMetric):
         self,
         horizontal_range: tuple[float, float] = DEFAULT_HORIZONTAL_RANGE,
         vertical_range: tuple[float, float] = DEFAULT_VERTICAL_RANGE,
+        landmark_indices: Dict[str, tuple[int, ...]] = None,
     ) -> None:
         self.horizontal_range = horizontal_range
         self.vertical_range = vertical_range
+        # Ensure required keys exist if custom provided
+        if landmark_indices is not None:
+            missing =[k for k in self.LANDMARK_MAP.keys() if k not in landmark_indices]
+            if missing:
+                raise ValueError(f"Missing landmark indices for: {missing}")
+
+        self.landmarks = dict(landmark_indices) if landmark_indices is not None else dict(self.LANDMARK_MAP)
 
     def update(self, frame_data: Dict[str, Any]) -> Optional[Dict[str, Union[float, bool, Dict]]]:
 
