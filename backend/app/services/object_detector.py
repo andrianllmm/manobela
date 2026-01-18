@@ -168,11 +168,12 @@ class ObjectDetector:
     @staticmethod
     def _xywh_to_xyxy(boxes: np.ndarray) -> np.ndarray:
         """Convert bounding boxes from xywh to xyxy format."""
-        boxes[:, 0] -= boxes[:, 2] / 2
-        boxes[:, 1] -= boxes[:, 3] / 2
-        boxes[:, 2] += boxes[:, 0]
-        boxes[:, 3] += boxes[:, 1]
-        return boxes
+        boxes_copy = boxes.copy()
+        boxes_copy[:, 0] = boxes[:, 0] - boxes[:, 2] / 2
+        boxes_copy[:, 1] = boxes[:, 1] - boxes[:, 3] / 2
+        boxes_copy[:, 2] = boxes[:, 0] + boxes[:, 2] / 2
+        boxes_copy[:, 3] = boxes[:, 1] + boxes[:, 3] / 2
+        return boxes_copy
 
     @staticmethod
     def _apply_nms(boxes, confidences, class_ids, conf_thres, iou_thres):
