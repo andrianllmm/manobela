@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from app.core.dependencies import (
+    ConnectionManagerDep,
     ConnectionManagerWsDep,
     FaceLandmarkerDepWs,
     ObjectDetectorDep,
