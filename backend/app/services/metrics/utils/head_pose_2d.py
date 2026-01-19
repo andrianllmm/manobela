@@ -2,8 +2,11 @@
 2D-only head pose estimation using geometric relationships between facial landmarks.
 No 3D coordinates or camera calibration required.
 """
+
 import math
-from typing import List, Tuple
+from typing import Sequence
+
+from app.services.face_landmarker import FaceLandmark2D
 from app.services.metrics.utils.geometry import euclidean_dist
 
 # Key landmark indices for head pose estimation (MediaPipe 468 landmarks)
@@ -21,7 +24,7 @@ LEFT_FACE = 234  # Left cheek
 RIGHT_FACE = 454  # Right cheek
 
 
-def compute_roll_angle(landmarks: List[Tuple[float, float]]) -> float:
+def compute_roll_angle(landmarks: Sequence[FaceLandmark2D]) -> float:
     """
     Compute roll (head tilt) angle from 2D landmarks.
     Uses the angle between eye corners.
@@ -48,7 +51,9 @@ def compute_roll_angle(landmarks: List[Tuple[float, float]]) -> float:
     return roll
 
 
-def compute_yaw_angle(landmarks: List[Tuple[float, float]], yaw_scale: float = 60.0) -> float:
+def compute_yaw_angle(
+    landmarks: Sequence[FaceLandmark2D], yaw_scale: float = 60.0
+) -> float:
     """
     Compute yaw (left/right turn) angle from 2D landmarks.
     Uses the ratio of distances from nose to face edges.
@@ -90,7 +95,7 @@ def compute_yaw_angle(landmarks: List[Tuple[float, float]], yaw_scale: float = 6
     return yaw
 
 
-def compute_pitch_angle(landmarks: List[Tuple[float, float]]) -> float:
+def compute_pitch_angle(landmarks: Sequence[FaceLandmark2D]) -> float:
     """
     Compute pitch (up/down tilt) angle from 2D landmarks.
     Uses the vertical position of nose relative to face center.
@@ -107,7 +112,7 @@ def compute_pitch_angle(landmarks: List[Tuple[float, float]]) -> float:
     if len(landmarks) <= max(NOSE_TIP, CHIN, FOREHEAD):
         return 0.0
 
-    #landmarks needed
+    # landmarks needed
     nose = landmarks[NOSE_TIP]
     chin = landmarks[CHIN]
     forehead = landmarks[FOREHEAD]
@@ -132,8 +137,8 @@ def compute_pitch_angle(landmarks: List[Tuple[float, float]]) -> float:
 
 
 def compute_head_pose_angles_2d(
-    landmarks: List[Tuple[float, float]]
-) -> Tuple[float, float, float]:
+    landmarks: Sequence[FaceLandmark2D],
+) -> tuple[float, float, float]:
     """
     Compute head pose angles (yaw, pitch, roll) from 2D landmarks only.
 
@@ -157,4 +162,3 @@ def compute_head_pose_angles_2d(
     roll = compute_roll_angle(landmarks)
 
     return (yaw, pitch, roll)
-

@@ -1,12 +1,13 @@
-from typing import List, Tuple
+from typing import Sequence
 
+from app.services.face_landmarker import FaceLandmark2D
 from app.services.metrics.utils.geometry import euclidean_dist
 
 LEFT_EYE_INDICES = [33, 160, 158, 133, 153, 144]
 RIGHT_EYE_INDICES = [362, 385, 387, 263, 373, 380]
 
 
-def compute_ear(landmarks: List[Tuple[float, float]], indices: List[int]) -> float:
+def compute_ear(landmarks: Sequence[FaceLandmark2D], indices: list[int]) -> float:
     """
     Compute eye aspect ratio (EAR) for a given set of landmarks.
 
@@ -28,9 +29,9 @@ def compute_ear(landmarks: List[Tuple[float, float]], indices: List[int]) -> flo
 
 
 def average_ear(
-    landmarks: List[Tuple[float, float]],
-    left_eye_indices: List[int] = LEFT_EYE_INDICES,
-    right_eye_indices: List[int] = RIGHT_EYE_INDICES,
+    landmarks: Sequence[FaceLandmark2D],
+    left_eye_indices: list[int] = LEFT_EYE_INDICES,
+    right_eye_indices: list[int] = RIGHT_EYE_INDICES,
 ) -> float:
     """
     Compute average EAR for a given set of landmarks.

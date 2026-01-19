@@ -1,5 +1,16 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+
+from typing_extensions import TypedDict
+
+from app.services.metrics.frame_context import FrameContext
+
+
+class MetricOutputBase(TypedDict, total=False):
+    """
+    Base class for metric output.
+    """
+
+    pass
 
 
 class BaseMetric(ABC):
@@ -8,7 +19,7 @@ class BaseMetric(ABC):
     """
 
     @abstractmethod
-    def update(self, frame_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def update(self, context: FrameContext) -> MetricOutputBase:
         """
         Update the metric with the latest frame data.
 
@@ -17,7 +28,7 @@ class BaseMetric(ABC):
                         e.g., {'landmarks': [...], 'timestamp': 'ISO string'}
 
         Returns:
-            Dictionary of metric results or None if metric cannot be computed.
+            Dictionary of metric results.
         """
         pass
 

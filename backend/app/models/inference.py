@@ -1,21 +1,14 @@
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 from pydantic import BaseModel
+
+from app.services.metrics.metric_manager import MetricsOutput
+from app.services.object_detector import ObjectDetection
 
 
 class Resolution(BaseModel):
     width: int
     height: int
-
-
-class ObjectDetection(BaseModel):
-    """
-    Object detection result for a single detected object.
-    """
-
-    bbox: List[float]
-    conf: float
-    class_id: int
 
 
 class InferenceData(BaseModel):
@@ -34,6 +27,6 @@ class InferenceData(BaseModel):
 
     timestamp: str
     resolution: Resolution
-    face_landmarks: Optional[List[float]] = None
-    object_detections: Optional[List[ObjectDetection]] = None
-    metrics: Optional[Dict[str, Any]] = None
+    face_landmarks: Optional[list[float]] = None
+    object_detections: Optional[list[ObjectDetection]] = None
+    metrics: Optional[MetricsOutput] = None
