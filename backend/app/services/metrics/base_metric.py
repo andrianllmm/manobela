@@ -1,6 +1,16 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
+from typing_extensions import TypedDict
+
+
+class MetricOutputBase(TypedDict, total=False):
+    """
+    Base class for metric output.
+    """
+
+    pass
+
 
 class BaseMetric(ABC):
     """
@@ -8,7 +18,7 @@ class BaseMetric(ABC):
     """
 
     @abstractmethod
-    def update(self, frame_data: dict[str, Any]) -> dict[str, Any]:
+    def update(self, frame_data: dict[str, Any]) -> MetricOutputBase:
         """
         Update the metric with the latest frame data.
 

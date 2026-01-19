@@ -1,12 +1,19 @@
 from typing import Any, Optional, Sequence
 
 from app.services.face_landmarker import FaceLandmark2D
-from app.services.metrics.base_metric import BaseMetric
+from app.services.metrics.base_metric import BaseMetric, MetricOutputBase
 from app.services.metrics.utils.mar import compute_mar
 from app.services.smoother import Smoother
 
 Point2D = Sequence
 Landmarks = Sequence[Point2D]
+
+
+class YawnMetricOutput(MetricOutputBase):
+    mar: Optional[float]
+    yawning: bool
+    yawn_progress: float
+    yawn_count: int
 
 
 class YawnMetric(BaseMetric):
@@ -84,7 +91,7 @@ class YawnMetric(BaseMetric):
         self._yawn_active = False
         self._yawn_count = 0
 
-    def update(self, frame_data: dict[str, Any]) -> dict[str, Any]:
+    def update(self, frame_data: dict[str, Any]) -> YawnMetricOutput:
         landmarks: Sequence[FaceLandmark2D] = frame_data.get("landmarks", [])
 
         if not landmarks:
@@ -111,6 +118,7 @@ class YawnMetric(BaseMetric):
                     self._open_counter / self._min_duration_frames,
                     1.0,
                 ),
+                "yawn_count": self._yawn_count,
             }
 
         mar_value = smoothed[0]

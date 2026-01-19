@@ -1,6 +1,8 @@
-from typing import Any, Optional
+from typing import Optional
 
 from pydantic import BaseModel
+
+from app.services.metrics.metric_manager import MetricsOutput
 
 
 class Resolution(BaseModel):
@@ -36,4 +38,4 @@ class InferenceData(BaseModel):
     resolution: Resolution
     face_landmarks: Optional[list[float]] = None
     object_detections: Optional[list[ObjectDetection]] = None
-    metrics: Optional[dict[str, Any]] = None
+    metrics: Optional[MetricsOutput] = None

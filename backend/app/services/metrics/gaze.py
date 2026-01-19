@@ -1,7 +1,7 @@
 import logging
-from typing import Any
+from typing import Any, Optional
 
-from app.services.metrics.base_metric import BaseMetric
+from app.services.metrics.base_metric import BaseMetric, MetricOutputBase
 from app.services.metrics.utils.eye_gaze_ratio import (
     left_eye_gaze_ratio,
     right_eye_gaze_ratio,
@@ -11,6 +11,10 @@ from app.services.metrics.utils.math import in_range
 logger = logging.getLogger(__name__)
 
 
+class GazeMetricOutput(MetricOutputBase):
+    gaze_on_road: Optional[bool]
+
+
 class GazeMetric(BaseMetric):
     """
     Computes whether the user's gaze is within an acceptable region.
@@ -18,10 +22,6 @@ class GazeMetric(BaseMetric):
     The metric estimates gaze direction using iris position relative to eye
     corners and eyelids for both eyes. It then checks if the gaze lies within
     the configured horizontal and vertical ranges.
-
-    Output:
-        gaze_on_road: True if gaze is within both horizontal and vertical ranges for at least one eye
-        (and not outside range for any present eye). False otherwise.
 
     Coordinate System (used internally):
         - X-axis: 0.0 (left) to 1.0 (right)
@@ -39,7 +39,7 @@ class GazeMetric(BaseMetric):
         self.horizontal_range = horizontal_range
         self.vertical_range = vertical_range
 
-    def update(self, frame_data: dict[str, Any]) -> dict[str, Any]:
+    def update(self, frame_data: dict[str, Any]) -> GazeMetricOutput:
         landmarks = frame_data.get("landmarks")
         if not landmarks:
             return {

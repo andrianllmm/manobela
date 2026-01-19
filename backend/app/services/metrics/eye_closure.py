@@ -3,10 +3,17 @@ from collections import deque
 from typing import Any, Optional
 
 from app.core.config import settings
-from app.services.metrics.base_metric import BaseMetric
+from app.services.metrics.base_metric import BaseMetric, MetricOutputBase
 from app.services.metrics.utils.ear import average_ear
 
 logger = logging.getLogger(__name__)
+
+
+class EyeClosureMetricOutput(MetricOutputBase):
+    ear_alert: bool
+    ear: Optional[float]
+    perclos_alert: bool
+    perclos: Optional[float]
 
 
 class EyeClosureMetric(BaseMetric):
@@ -41,7 +48,7 @@ class EyeClosureMetric(BaseMetric):
         self.last_value: Optional[float] = None
         self.eye_history: deque[bool] = deque(maxlen=self.window_size)
 
-    def update(self, frame_data: dict[str, Any]) -> dict[str, Any]:
+    def update(self, frame_data: dict[str, Any]) -> EyeClosureMetricOutput:
         landmarks = frame_data.get("landmarks")
         if not landmarks:
             return {

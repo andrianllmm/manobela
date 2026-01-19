@@ -1,13 +1,26 @@
 import logging
 from collections import deque
-from typing import Any, Sequence
+from typing import Any, Optional, Sequence
 
 from app.core.config import settings
 from app.services.face_landmarker import FaceLandmark2D
-from app.services.metrics.base_metric import BaseMetric
+from app.services.metrics.base_metric import BaseMetric, MetricOutputBase
 from app.services.metrics.utils.head_pose_2d import compute_head_pose_angles_2d
 
 logger = logging.getLogger(__name__)
+
+
+class HeadPoseMetricOutput(MetricOutputBase):
+    head_pose_alert: bool
+    yaw_alert: bool
+    pitch_alert: bool
+    roll_alert: bool
+    yaw: Optional[float]
+    pitch: Optional[float]
+    roll: Optional[float]
+    yaw_sustained: float
+    pitch_sustained: float
+    roll_sustained: float
 
 
 class HeadPoseMetric(BaseMetric):
@@ -62,20 +75,20 @@ class HeadPoseMetric(BaseMetric):
         self.pitch_history: deque[bool] = deque(maxlen=self.window_size)
         self.roll_history: deque[bool] = deque(maxlen=self.window_size)
 
-    def update(self, frame_data: dict[str, Any]) -> dict[str, Any]:
+    def update(self, frame_data: dict[str, Any]) -> HeadPoseMetricOutput:
         landmarks: Sequence[FaceLandmark2D] = frame_data.get("landmarks", [])
         if not landmarks:
             return {
+                "head_pose_alert": False,
                 "yaw": None,
                 "pitch": None,
                 "roll": None,
                 "yaw_alert": False,
                 "pitch_alert": False,
                 "roll_alert": False,
-                "yaw_sustained": False,
-                "pitch_sustained": False,
-                "roll_sustained": False,
-                "head_pose_alert": False,
+                "yaw_sustained": self._sustained_ratio(self.yaw_history),
+                "pitch_sustained": self._sustained_ratio(self.pitch_history),
+                "roll_sustained": self._sustained_ratio(self.roll_history),
             }
 
         # Compute head pose angles
@@ -84,16 +97,16 @@ class HeadPoseMetric(BaseMetric):
         except (ValueError, IndexError, ZeroDivisionError) as e:
             logger.debug(f"Head pose computation failed: {e}")
             return {
+                "head_pose_alert": False,
                 "yaw": None,
                 "pitch": None,
                 "roll": None,
                 "yaw_alert": False,
                 "pitch_alert": False,
                 "roll_alert": False,
-                "yaw_sustained": False,
-                "pitch_sustained": False,
-                "roll_sustained": False,
-                "head_pose_alert": False,
+                "yaw_sustained": self._sustained_ratio(self.yaw_history),
+                "pitch_sustained": self._sustained_ratio(self.pitch_history),
+                "roll_sustained": self._sustained_ratio(self.roll_history),
             }
 
         # Check thresholds (absolute values for all angles)

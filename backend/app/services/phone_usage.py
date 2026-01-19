@@ -1,6 +1,11 @@
-from app.services.metrics.base_metric import BaseMetric
+from app.services.metrics.base_metric import BaseMetric, MetricOutputBase
 
 PHONE_CLASS_ID = 67  # COCO
+
+
+class PhoneUsageMetricOutput(MetricOutputBase):
+    phone_usage: bool
+    phone_detected_frames: int
 
 
 class PhoneUsageMetric(BaseMetric):
@@ -19,7 +24,7 @@ class PhoneUsageMetric(BaseMetric):
         self.min_consecutive_frames = min_consecutive_frames
         self.counter = 0
 
-    def update(self, frame_data):
+    def update(self, frame_data) -> PhoneUsageMetricOutput:
         obj_detections = frame_data.get("object_detections", [])
         phone_detected = any(
             d.conf >= self.conf and (d.class_id == PHONE_CLASS_ID)
