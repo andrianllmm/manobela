@@ -9,21 +9,20 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
 import cv2
-import mediapipe as mp
 
 from app.core.config import settings
 from app.models.inference import InferenceData, Resolution
 from app.services.connection_manager import ConnectionManager
+from app.services.face_landmarker import (
+    FaceLandmarker,
+    get_essential_landmarks,
+)
 from app.services.face_landmarks import ESSENTIAL_LANDMARKS
 from app.services.metrics.metric_manager import MetricManager
 from app.services.object_detector import ObjectDetector
 from app.services.smoother import Smoother
 
 logger = logging.getLogger(__name__)
-
-# MediaPipe FaceLandmarker is NOT thread-safe.
-# Use a global lock to prevent concurrent access.
-face_landmarker_lock = threading.Lock()
 
 # YOLO ONNX model is NOTthread-safe.
 # Use a global lock to prevent concurrent access.
@@ -42,7 +41,7 @@ atexit.register(executor.shutdown, wait=True)
 def process_video_frame(
     timestamp: str,
     img_bgr,
-    face_landmarker,
+    face_landmarker: FaceLandmarker,
     object_detector: ObjectDetector,
     metric_manager: MetricManager,
     smoother: Smoother,
@@ -59,30 +58,10 @@ def process_video_frame(
         w, h = int(w * scale), int(h * scale)
         img_bgr = cv2.resize(img_bgr, (w, h))
 
-    # Convert BGR to RGB
-    rgb_frame = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-    mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
-
     # Detect landmarks
-    timestamp_ms = int(time.time() * 1000)
-    with face_landmarker_lock:
-        detection_result = face_landmarker.detect_for_video(mp_image, timestamp_ms)
-
-    raw_landmarks: list[tuple[float, float]] | None = None
-    essential_landmarks: list[float] | None = None
-
-    if detection_result.face_landmarks:
-        face_landmarks = detection_result.face_landmarks[0]
-
-        # Full landmarks as (x, y) tuples
-        raw_landmarks = [(lm.x, lm.y) for lm in face_landmarks]
-
-        # Filter only essential landmarks
-        essential_landmarks = [
-            coord
-            for idx in ESSENTIAL_LANDMARKS
-            for coord in (face_landmarks[idx].x, face_landmarks[idx].y)
-        ]
+    face_landmarks = face_landmarker.detect(img_bgr)
+    essential_landmarks = get_essential_landmarks(face_landmarks, ESSENTIAL_LANDMARKS)
+    smoothed_landmarks = smoother.update(essential_landmarks)
 
     # Detect objects
     with object_detector_lock:
@@ -90,14 +69,9 @@ def process_video_frame(
 
     # Update metrics
     frame_data = {}
-    frame_data["landmarks"] = raw_landmarks
+    frame_data["landmarks"] = face_landmarks
     frame_data["object_detections"] = object_detections
     metrics = metric_manager.update(frame_data)
-
-    # Apply smoothing
-    smoothed_landmarks = (
-        smoother.update(essential_landmarks) if essential_landmarks else None
-    )
 
     return InferenceData(
         timestamp=timestamp,

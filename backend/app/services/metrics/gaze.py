@@ -1,6 +1,7 @@
 import logging
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
+from app.services.face_landmarker import FaceLandmark2D
 from app.services.metrics.base_metric import BaseMetric
 from app.services.metrics.utils.geometry import average_point
 from app.services.metrics.utils.math import in_range
@@ -147,7 +148,7 @@ class GazeMetric(BaseMetric):
 
     @staticmethod
     def _eye_gaze_ratio(
-        landmarks: List[tuple[float, float]],
+        landmarks: Sequence[FaceLandmark2D],
         corners: Tuple[int, int],
         lids: Tuple[int, int],
         iris_indices: Tuple[int, ...],

@@ -4,7 +4,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.services.connection_manager import ConnectionManager
-from app.services.face_landmarker import create_face_landmarker
+from app.services.face_landmarker import (
+    MediapipeFaceLandmarker,
+    create_face_landmarker,
+)
 from app.services.object_detector import create_object_detector
 
 logger = logging.getLogger(__name__)
@@ -24,7 +27,7 @@ async def lifespan(app: FastAPI):
     app.state.connection_manager = ConnectionManager()
 
     # Create face landmarker
-    app.state.face_landmarker = create_face_landmarker()
+    app.state.face_landmarker = create_face_landmarker(MediapipeFaceLandmarker)
 
     # Create object detector
     app.state.object_detector = create_object_detector()
@@ -50,8 +53,7 @@ async def lifespan(app: FastAPI):
         # Close face landmarker
         if getattr(app.state, "face_landmarker", None):
             try:
-                if hasattr(app.state.face_landmarker, "close"):
-                    app.state.face_landmarker.close()
+                app.state.face_landmarker.close()
             except Exception as e:
                 logger.error("Error closing FaceLandmarker: %s", e)
             finally:

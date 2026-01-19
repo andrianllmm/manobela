@@ -1,5 +1,6 @@
 from typing import Any, Dict, Optional, Sequence
 
+from app.services.face_landmarker import FaceLandmark2D
 from app.services.metrics.base_metric import BaseMetric
 from app.services.metrics.utils.mar import compute_mar
 from app.services.smoother import Smoother
@@ -118,7 +119,7 @@ class YawnMetric(BaseMetric):
         self._yawn_count = 0
 
     def update(self, frame_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        landmarks = frame_data.get("landmarks")
+        landmarks: Sequence[FaceLandmark2D] = frame_data.get("landmarks", [])
 
         if not landmarks:
             # Do NOT reset state on transient landmark dropouts

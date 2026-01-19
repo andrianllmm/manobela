@@ -1,8 +1,9 @@
 import logging
 from collections import deque
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional, Sequence
 
 from app.core.config import settings
+from app.services.face_landmarker import FaceLandmark2D
 from app.services.metrics.base_metric import BaseMetric
 from app.services.metrics.utils.ear import average_ear
 
@@ -42,7 +43,7 @@ class EyeClosureMetric(BaseMetric):
         self.eye_history: deque[bool] = deque(maxlen=self.window_size)
 
     def update(self, frame_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        landmarks: Optional[List[tuple[float, float]]] = frame_data.get("landmarks")
+        landmarks: Sequence[FaceLandmark2D] = frame_data.get("landmarks", [])
         if not landmarks:
             return None
 

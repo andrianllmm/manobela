@@ -1,5 +1,6 @@
 from typing import Optional, Sequence, Tuple
 
+from app.services.face_landmarker import FaceLandmark2D
 from app.services.metrics.utils.geometry import euclidean_dist
 
 UPPER_LIP = 13
@@ -16,7 +17,7 @@ REQUIRED_INDICES: Tuple[int, int, int, int] = (
 
 
 @staticmethod
-def compute_mar(landmarks: Sequence[Sequence[float]]) -> Optional[float]:
+def compute_mar(landmarks: Sequence[FaceLandmark2D]) -> Optional[float]:
     # Validate we can index required landmarks
     max_idx = max(REQUIRED_INDICES)
     if len(landmarks) <= max_idx:

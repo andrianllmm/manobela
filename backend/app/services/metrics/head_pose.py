@@ -5,9 +5,10 @@ Estimates yaw, pitch, and roll angles
 
 import logging
 from collections import deque
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Sequence, Tuple
 
 from app.core.config import settings
+from app.services.face_landmarker import FaceLandmark2D
 from app.services.metrics.base_metric import BaseMetric
 from app.services.metrics.utils.head_pose_2d import compute_head_pose_angles_2d
 
@@ -76,8 +77,7 @@ class HeadPoseMetric(BaseMetric):
         Returns:
             Dictionary with head pose angles and alerts, or None if insufficient data.
         """
-        landmarks: Optional[List[Tuple[float, float]]] = frame_data.get("landmarks")
-
+        landmarks: Sequence[FaceLandmark2D] = frame_data.get("landmarks", [])
         if not landmarks:
             return None
 
