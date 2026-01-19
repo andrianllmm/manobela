@@ -19,7 +19,7 @@ from app.services.face_landmarker import (
 from app.services.face_landmarks import ESSENTIAL_LANDMARKS
 from app.services.metrics.frame_context import FrameContext
 from app.services.metrics.metric_manager import MetricManager
-from app.services.object_detector import YoloObjectDetector
+from app.services.object_detector import ObjectDetector
 from app.services.smoother import Smoother
 
 logger = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ def process_video_frame(
     timestamp: str,
     img_bgr,
     face_landmarker: FaceLandmarker,
-    object_detector: YoloObjectDetector,
+    object_detector: ObjectDetector,
     metric_manager: MetricManager,
     smoother: Smoother,
 ) -> InferenceData:
@@ -81,7 +81,7 @@ async def process_video_frames(
     client_id: str,
     track,
     face_landmarker,
-    object_detector: YoloObjectDetector,
+    object_detector: ObjectDetector,
     connection_manager: ConnectionManager,
     stop_processing: asyncio.Event,
 ) -> None:
