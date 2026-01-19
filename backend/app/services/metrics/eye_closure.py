@@ -1,9 +1,8 @@
 import logging
 from collections import deque
-from typing import Any, Optional, Sequence
+from typing import Any, Optional
 
 from app.core.config import settings
-from app.services.face_landmarker import FaceLandmark2D
 from app.services.metrics.base_metric import BaseMetric
 from app.services.metrics.utils.ear import average_ear
 
@@ -42,17 +41,27 @@ class EyeClosureMetric(BaseMetric):
         self.last_value: Optional[float] = None
         self.eye_history: deque[bool] = deque(maxlen=self.window_size)
 
-    def update(self, frame_data: dict[str, Any]) -> Optional[dict[str, Any]]:
-        landmarks: Sequence[FaceLandmark2D] = frame_data.get("landmarks", [])
+    def update(self, frame_data: dict[str, Any]) -> dict[str, Any]:
+        landmarks = frame_data.get("landmarks")
         if not landmarks:
-            return None
+            return {
+                "ear_alert": False,
+                "ear": None,
+                "perclos_alert": False,
+                "perclos": None,
+            }
 
         # Computer EAR
         try:
             ear_value = average_ear(landmarks)
         except (IndexError, ZeroDivisionError) as e:
             logger.debug(f"EAR computation failed: {e}")
-            return None
+            return {
+                "ear_alert": False,
+                "ear": None,
+                "perclos_alert": False,
+                "perclos": None,
+            }
 
         self.last_value = ear_value
 

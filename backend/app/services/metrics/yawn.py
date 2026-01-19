@@ -84,7 +84,7 @@ class YawnMetric(BaseMetric):
         self._yawn_active = False
         self._yawn_count = 0
 
-    def update(self, frame_data: dict[str, Any]) -> Optional[dict[str, Any]]:
+    def update(self, frame_data: dict[str, Any]) -> dict[str, Any]:
         landmarks: Sequence[FaceLandmark2D] = frame_data.get("landmarks", [])
 
         if not landmarks:

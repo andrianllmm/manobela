@@ -1,6 +1,6 @@
 import logging
 from collections import deque
-from typing import Any, Optional, Sequence
+from typing import Any, Sequence
 
 from app.core.config import settings
 from app.services.face_landmarker import FaceLandmark2D
@@ -62,17 +62,39 @@ class HeadPoseMetric(BaseMetric):
         self.pitch_history: deque[bool] = deque(maxlen=self.window_size)
         self.roll_history: deque[bool] = deque(maxlen=self.window_size)
 
-    def update(self, frame_data: dict[str, Any]) -> Optional[dict[str, Any]]:
+    def update(self, frame_data: dict[str, Any]) -> dict[str, Any]:
         landmarks: Sequence[FaceLandmark2D] = frame_data.get("landmarks", [])
         if not landmarks:
-            return None
+            return {
+                "yaw": None,
+                "pitch": None,
+                "roll": None,
+                "yaw_alert": False,
+                "pitch_alert": False,
+                "roll_alert": False,
+                "yaw_sustained": False,
+                "pitch_sustained": False,
+                "roll_sustained": False,
+                "head_pose_alert": False,
+            }
 
         # Compute head pose angles
         try:
             yaw, pitch, roll = compute_head_pose_angles_2d(landmarks)
         except (ValueError, IndexError, ZeroDivisionError) as e:
             logger.debug(f"Head pose computation failed: {e}")
-            return None
+            return {
+                "yaw": None,
+                "pitch": None,
+                "roll": None,
+                "yaw_alert": False,
+                "pitch_alert": False,
+                "roll_alert": False,
+                "yaw_sustained": False,
+                "pitch_sustained": False,
+                "roll_sustained": False,
+                "head_pose_alert": False,
+            }
 
         # Check thresholds (absolute values for all angles)
         yaw_alert = abs(yaw) > self.yaw_threshold

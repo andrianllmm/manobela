@@ -1,7 +1,6 @@
 import logging
-from typing import Any, Optional, Sequence, Union
+from typing import Any
 
-from app.services.face_landmarker import FaceLandmark2D
 from app.services.metrics.base_metric import BaseMetric
 from app.services.metrics.utils.eye_gaze_ratio import (
     left_eye_gaze_ratio,
@@ -40,24 +39,27 @@ class GazeMetric(BaseMetric):
         self.horizontal_range = horizontal_range
         self.vertical_range = vertical_range
 
-    def update(
-        self, frame_data: dict[str, Any]
-    ) -> Optional[dict[str, Union[float, bool, dict]]]:
-        landmarks: Sequence[FaceLandmark2D] = frame_data.get("landmarks", [])
-
+    def update(self, frame_data: dict[str, Any]) -> dict[str, Any]:
+        landmarks = frame_data.get("landmarks")
         if not landmarks:
-            return None
+            return {
+                "gaze_on_road": None,
+            }
 
         try:
             left_ratio = left_eye_gaze_ratio(landmarks)
             right_ratio = right_eye_gaze_ratio(landmarks)
         except (IndexError, ZeroDivisionError) as exc:
             logger.debug(f"Gaze computation failed: {exc}")
-            return None
+            return {
+                "gaze_on_road": None,
+            }
 
         # Occlusion handling for missing eye data
         if left_ratio is None and right_ratio is None:
-            return None
+            return {
+                "gaze_on_road": False,
+            }
 
         left_on_h = in_range(
             left_ratio[0] if left_ratio else None, self.horizontal_range
