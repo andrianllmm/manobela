@@ -4,6 +4,7 @@ import { View, StyleSheet } from 'react-native';
 import { SessionState } from '@/hooks/useMonitoringSession';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
+import { CameraRecordButton } from './camera-record-button';
 import { FacialLandmarkOverlay } from './facial-landmark-overlay';
 import { ObjectDetectionOverlay } from './object-detection-overlay';
 import { InferenceData } from '@/types/inference';
@@ -14,6 +15,8 @@ type MediaStreamViewProps = {
   inferenceData?: InferenceData | null;
   style?: object;
   mirror?: boolean;
+  hasCamera: boolean;
+  onToggle: () => void;
 };
 
 /**
@@ -25,6 +28,8 @@ export const MediaStreamView = ({
   inferenceData,
   style,
   mirror = true,
+  hasCamera,
+  onToggle,
 }: MediaStreamViewProps) => {
   const [viewDimensions, setViewDimensions] = useState({ width: 0, height: 0 });
   const [showOverlay, setShowOverlay] = useState(true);
@@ -87,8 +92,17 @@ export const MediaStreamView = ({
         />
       )}
 
-      {/* Toggle button for overlay */}
-      <View className="absolute bottom-3 right-3">
+      {/* Overlay record button */}
+      <View className="absolute bottom-3 left-0 right-0 items-center">
+        <CameraRecordButton
+          isRecording={sessionState === 'active'}
+          disabled={!hasCamera || sessionState === 'starting' || sessionState === 'stopping'}
+          onPress={onToggle}
+        />
+      </View>
+
+      {/* Overlay toggle */}
+      <View className="absolute right-3 top-3">
         <Button
           size="sm"
           variant="secondary"

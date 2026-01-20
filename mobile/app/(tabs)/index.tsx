@@ -4,7 +4,6 @@ import { useCamera } from '@/hooks/useCamera';
 import { useMonitoringSession } from '@/hooks/useMonitoringSession';
 import { MediaStreamView } from '@/components/media-stream-view';
 import { ConnectionStatus } from '@/components/connection-status';
-import { MonitoringControls } from '@/components/monitoring-controls';
 import { Stack } from 'expo-router';
 import { MetricsDisplay } from '@/components/metrics/metrics-display';
 
@@ -14,22 +13,12 @@ const WS_URL = `${WS_BASE}/driver-monitoring`;
 export default function MonitorScreen() {
   const { localStream } = useCamera();
 
-  const {
-    sessionState,
-    inferenceData,
-    clientId,
-    transportStatus,
-    connectionStatus,
-    error,
-    hasCamera,
-    start,
-    stop,
-  } = useMonitoringSession({
-    url: WS_URL,
-    stream: localStream,
-  });
+  const { sessionState, inferenceData, clientId, error, hasCamera, start, stop } =
+    useMonitoringSession({
+      url: WS_URL,
+      stream: localStream,
+    });
 
-  // Start/stop toggle
   const handleToggle = useCallback(() => {
     if (sessionState === 'idle') {
       start();
@@ -49,6 +38,8 @@ export default function MonitorScreen() {
           stream={localStream}
           sessionState={sessionState}
           inferenceData={inferenceData}
+          hasCamera={hasCamera}
+          onToggle={handleToggle}
           style={{
             width: '100%',
             aspectRatio:
@@ -57,12 +48,6 @@ export default function MonitorScreen() {
           }}
         />
       </View>
-
-      <MonitoringControls
-        sessionState={sessionState}
-        hasCamera={hasCamera}
-        onToggle={handleToggle}
-      />
 
       <MetricsDisplay sessionState={sessionState} metricsOutput={inferenceData?.metrics ?? null} />
     </ScrollView>
