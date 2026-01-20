@@ -107,9 +107,10 @@ export default function SettingsScreen() {
   const aboutValue = useMemo(() => `${appName} • v${appVersion}`, [appName, appVersion]);
 
   const handleOpenLink = async (url: string) => {
-    const supported = await Linking.canOpenURL(url);
-    if (supported) {
-      await Linking.openURL(url);
+    try{
+      await Linking.openURL(url)
+    }catch (e){
+      console.warn('Failed to open URL', url, e)
     }
   };
 
