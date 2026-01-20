@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { View, ScrollView } from 'react-native';
 import { useCamera } from '@/hooks/useCamera';
 import { useMonitoringSession } from '@/hooks/useMonitoringSession';
@@ -8,11 +8,18 @@ import { MonitoringControls } from '@/components/monitoring-controls';
 import { InferenceDisplay } from '@/components/inference-display';
 import { Stack } from 'expo-router';
 
-const WS_BASE = process.env.EXPO_PUBLIC_WS_BASE!;
-const WS_URL = `${WS_BASE}/driver-monitoring`;
+
+import {useSettings} from '@/hooks/useSettings';
 
 export default function MonitorScreen() {
   const { localStream } = useCamera();
+  const {settings} = useSettings();
+  const wsUrl = useMemo(() =>{
+    const baseUrl = settings.wsBaseUrl || process.env.EXPO_PUBLIC_WS_BASE || ''; // If we cant find just return blank or ''
+    return baseUrl ? `${baseUrl}/driver-monitoring` : '';
+  },[settings.wsBaseUrl]);
+
+
 
   const {
     sessionState,
@@ -25,7 +32,7 @@ export default function MonitorScreen() {
     start,
     stop,
   } = useMonitoringSession({
-    url: WS_URL,
+    url: wsUrl,
     stream: localStream,
   });
 

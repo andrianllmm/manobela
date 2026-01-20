@@ -3,6 +3,7 @@
  */
 export async function fetchIceServers(): Promise<RTCConfiguration> {
   const res = await fetch(`${process.env.EXPO_PUBLIC_API_BASE}/ice-servers`);
+
   const data = await res.json();
 
   return {

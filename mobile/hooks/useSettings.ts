@@ -1,0 +1,58 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  defaultSettings,
+  loadSettings,
+  saveSettings as saveSettingsToStorage,
+  type Settings,
+} from '../lib/settings';
+
+export const useSettings = () => {
+  const [settings, setSettings] = useState<Settings>(defaultSettings);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const requestIdRef = useRef(0);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const refreshSettings = useCallback(async () => {
+    const id = ++requestIdRef.current;
+    setIsLoading(true);
+
+    try {
+      const storedSettings = await loadSettings();
+      if (!mountedRef.current || id !== requestIdRef.current) return;
+      setSettings(storedSettings);
+    } finally {
+      if (mountedRef.current && id === requestIdRef.current) {
+        setIsLoading(false);
+      }
+    }
+  }, []);
+
+  const saveSettings = useCallback(async (nextSettings: Settings) => {
+    // bump requestId so any in-flight refresh can't overwrite this
+    requestIdRef.current += 1;
+
+    await saveSettingsToStorage(nextSettings);
+    if (!mountedRef.current) return;
+
+    setSettings(nextSettings);
+  }, []);
+
+  useEffect(() => {
+    refreshSettings();
+  }, [refreshSettings]);
+
+  return {
+    settings,
+    isLoading,
+    refreshSettings,
+    saveSettings,
+  };
+};

@@ -1,4 +1,5 @@
 import '@/global.css';
+import 'react-native-url-polyfill/auto';
 
 import { NAV_THEME } from '@/lib/theme';
 import { ThemeProvider } from '@react-navigation/native';
