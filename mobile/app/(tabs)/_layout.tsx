@@ -50,12 +50,14 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
-        name="settings"
+        name="settings/index"
         options={{
           title: 'Settings',
           tabBarIcon: ({ color, size }) => <Bolt color={color} size={size} />,
         }}
       />
+      {/* Hidden compartments from tab navigation: */}
+      <Tabs.Screen name = "settings/api-websocket" options={{href: null, }} />
     </Tabs>
   );
 }

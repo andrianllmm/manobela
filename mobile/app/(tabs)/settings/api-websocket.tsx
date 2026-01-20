@@ -3,7 +3,7 @@ import { ScrollView, TextInput, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 import { Stack } from 'expo-router';
-import { useSettings } from '../../hooks/useSettings';
+import { useSettings } from '../../../hooks/useSettings';
 import { validateApiBaseUrl, validateWsBaseUrl } from '@/lib/settings';
 
 export default function SettingsScreen() {
