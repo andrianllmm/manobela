@@ -1,10 +1,10 @@
-import { useMemo, type ReactNode } from 'react';
-import { Linking, ScrollView, View} from 'react-native';
+import { useMemo } from 'react';
+import { Linking, ScrollView } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import Constants from 'expo-constants';
 import { SettingRow } from '@/components/setting/settings-row';
-import { Section } from '@/components/setting/settings-section'
-import { Switch } from '@/components/ui/switch'
+import { Section } from '@/components/setting/settings-section';
+import { Switch } from '@/components/ui/switch';
 
 import {
   Globe,
@@ -16,8 +16,11 @@ import {
   FileText,
   Languages,
   SunMoon,
+  Bell,
+  Vibrate,
 } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
+import { useSettings } from '@/hooks/useSettings';
 
 const LINKS = {
   faq: 'https://github.com/popcorn-prophets/manobela/blob/main/README.md',
@@ -27,11 +30,11 @@ const LINKS = {
   dataProtection: 'https://github.com/popcorn-prophets/manobela/blob/master/CODE_OF_CONDUCT.md',
 };
 
-
-
 export default function SettingsScreen() {
   const router = useRouter();
   const { colorScheme, setColorScheme } = useColorScheme();
+
+  const { settings, saveSettings } = useSettings();
 
   const isDarkMode = colorScheme === 'dark';
   const appName = Constants.expoConfig?.name ?? 'Manobela';
@@ -58,11 +61,9 @@ export default function SettingsScreen() {
           value={isDarkMode ? 'Dark' : 'Light'}
           rightElement={
             <Switch
-            checked={isDarkMode}
-            onCheckedChange={(v) =>
-            setColorScheme(v ? 'dark' : 'light')
-            }
-            disabled = {false}
+              checked={isDarkMode}
+              onCheckedChange={(v) => setColorScheme(v ? 'dark' : 'light')}
+              disabled={false}
             />
           }
         />
@@ -72,9 +73,49 @@ export default function SettingsScreen() {
         <SettingRow icon={Languages} label="English" value="Only language available" disabled />
       </Section>
 
+      <Section title="Alerts">
+        <SettingRow
+          icon={Bell}
+          label="Voice Alerts"
+          value={settings.enableSpeechAlerts ? 'On' : 'Off'}
+          rightElement={
+            <Switch
+              checked={settings.enableSpeechAlerts}
+              onCheckedChange={(v) =>
+                saveSettings({
+                  ...settings,
+                  enableSpeechAlerts: v,
+                })
+              }
+            />
+          }
+        />
+
+        <SettingRow
+          icon={Vibrate}
+          label="Haptic Alerts"
+          value={settings.enableHapticAlerts ? 'On' : 'Off'}
+          rightElement={
+            <Switch
+              checked={settings.enableHapticAlerts}
+              onCheckedChange={(v) =>
+                saveSettings({
+                  ...settings,
+                  enableHapticAlerts: v,
+                })
+              }
+            />
+          }
+        />
+      </Section>
+
       <Section title="Support & Feedback">
         <SettingRow icon={HelpCircle} label="FAQ" onPress={() => handleOpenLink(LINKS.faq)} />
-        <SettingRow icon={Github} label="GitHub Issues" onPress={() => handleOpenLink(LINKS.issues)} />
+        <SettingRow
+          icon={Github}
+          label="GitHub Issues"
+          onPress={() => handleOpenLink(LINKS.issues)}
+        />
       </Section>
 
       <Section title="About">
@@ -82,13 +123,29 @@ export default function SettingsScreen() {
       </Section>
 
       <Section title="API">
-        <SettingRow icon={Globe} label="Configure URL" onPress={() => router.push('/settings/api-urls')} />
+        <SettingRow
+          icon={Globe}
+          label="Configure URL"
+          onPress={() => router.push('/settings/api-urls')}
+        />
       </Section>
 
       <Section title="Legal & Compliance">
-        <SettingRow icon={ShieldCheck} label="Privacy Policy" onPress={() => handleOpenLink(LINKS.privacy)} />
-        <SettingRow icon={FileText} label="Terms & Conditions" onPress={() => handleOpenLink(LINKS.terms)} />
-        <SettingRow icon={Link2} label="Data Protection" onPress={() => handleOpenLink(LINKS.dataProtection)} />
+        <SettingRow
+          icon={ShieldCheck}
+          label="Privacy Policy"
+          onPress={() => handleOpenLink(LINKS.privacy)}
+        />
+        <SettingRow
+          icon={FileText}
+          label="Terms & Conditions"
+          onPress={() => handleOpenLink(LINKS.terms)}
+        />
+        <SettingRow
+          icon={Link2}
+          label="Data Protection"
+          onPress={() => handleOpenLink(LINKS.dataProtection)}
+        />
       </Section>
     </ScrollView>
   );

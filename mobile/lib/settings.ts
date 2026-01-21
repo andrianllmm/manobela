@@ -3,6 +3,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export type Settings = {
   apiBaseUrl: string;
   wsBaseUrl: string;
+
+  enableSpeechAlerts: boolean;
+  enableHapticAlerts: boolean;
 };
 
 const SETTINGS_KEY = 'app-settings';
@@ -13,6 +16,9 @@ const DEFAULT_WS_BASE = 'wss://ws.manobela.app';
 export const defaultSettings: Settings = {
   apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE ?? DEFAULT_API_BASE,
   wsBaseUrl: process.env.EXPO_PUBLIC_WS_BASE ?? DEFAULT_WS_BASE,
+
+  enableSpeechAlerts: true,
+  enableHapticAlerts: true,
 };
 
 const mergeSettings = (stored?: Partial<Settings>): Settings => {
@@ -23,6 +29,12 @@ const mergeSettings = (stored?: Partial<Settings>): Settings => {
     ...defaultSettings,
     ...(api ? { apiBaseUrl: api } : {}),
     ...(ws ? { wsBaseUrl: ws } : {}),
+    ...(typeof stored?.enableSpeechAlerts === 'boolean'
+      ? { enableSpeechAlerts: stored.enableSpeechAlerts }
+      : {}),
+    ...(typeof stored?.enableHapticAlerts === 'boolean'
+      ? { enableHapticAlerts: stored.enableHapticAlerts }
+      : {}),
   };
 };
 
@@ -38,11 +50,9 @@ const validateUrl = (value: string, allowedProtocols: string[]) => {
   }
 };
 
-export const validateApiBaseUrl = (value: string) =>
-  validateUrl(value, ['http:', 'https:']);
+export const validateApiBaseUrl = (value: string) => validateUrl(value, ['http:', 'https:']);
 
-export const validateWsBaseUrl = (value: string) =>
-  validateUrl(value, ['ws:', 'wss:']);
+export const validateWsBaseUrl = (value: string) => validateUrl(value, ['ws:', 'wss:']);
 
 export const loadSettings = async (): Promise<Settings> => {
   try {

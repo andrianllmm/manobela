@@ -4,41 +4,14 @@ import { View } from 'react-native';
 import { Text } from '@/components/ui/text';
 
 /** Human-readable for metric labels */
-const LABEL_MAPPINGS: Record<string, string> = {
-  ear_alert: 'EAR Alert',
-  ear: 'EAR',
-  perclos_alert: 'PERCLOS Alert',
-  perclos: 'PERCLOS',
-  mar: 'MAR',
-  yawning: 'Yawning',
-  yawn_progress: 'Yawn Progress',
-  yawn_count: 'Yawn Count',
-  yawn_rate: 'Yawn Rate',
-  yawn_rate_alert: 'Yawn Rate Alert',
-  head_pose_alert: 'Head Pose Alert',
-  yaw_alert: 'Yaw Alert',
-  pitch_alert: 'Pitch Alert',
-  roll_alert: 'Roll Alert',
-  yaw: 'Yaw',
-  pitch: 'Pitch',
-  roll: 'Roll',
-  yaw_sustained: 'Yaw Sustained',
-  pitch_sustained: 'Pitch Sustained',
-  roll_sustained: 'Roll Sustained',
-  gaze_alert: 'Gaze Alert',
-  gaze_rate: 'Gaze Rate',
-  phone_usage: 'Phone Usage',
-  phone_usage_rate: 'Phone Usage Rate',
-} as const;
+const LABEL_MAPPINGS: Record<string, string> = {} as const;
 
 /** Metric data keys that are percentages */
 const PERCENTAGE_KEYS = new Set([
-  'perclos',
-  'yawn_progress',
-  'yawn_rate',
-  'gaze_rate',
-  'phone_usage',
-  'phone_usage_rate',
+  'eye_closed_sustained',
+  'yawn_sustained',
+  'gaze_sustained',
+  'phone_usage_sustained',
 ]);
 
 /** Formats a metric label with a human-readable name */
