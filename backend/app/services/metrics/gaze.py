@@ -9,6 +9,7 @@ from app.services.metrics.utils.eye_gaze_ratio import (
     right_eye_gaze_ratio,
 )
 from app.services.metrics.utils.math import in_range
+from app.services.smoother import SequenceSmoother
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,7 @@ class GazeMetric(BaseMetric):
     DEFAULT_VERTICAL_RANGE = (0.35, 0.65)
     DEFAULT_WINDOW_SEC = 3
     DEFAULT_THRESHOLD = 0.5
+    DEFAULT_SMOOTHER_ALPHA = 0.4
 
     def __init__(
         self,
@@ -42,6 +44,7 @@ class GazeMetric(BaseMetric):
         vertical_range: tuple[float, float] = DEFAULT_VERTICAL_RANGE,
         window_sec: int = DEFAULT_WINDOW_SEC,
         threshold: float = DEFAULT_THRESHOLD,
+        smoother_alpha: float = DEFAULT_SMOOTHER_ALPHA,
     ) -> None:
         self.horizontal_range = horizontal_range
         self.vertical_range = vertical_range
@@ -51,6 +54,9 @@ class GazeMetric(BaseMetric):
         self.window_size = max(1, int(window_sec * settings.target_fps))
         self._history = deque(maxlen=self.window_size)
 
+        self.left_smoother = SequenceSmoother(alpha=smoother_alpha, max_missing=3)
+        self.right_smoother = SequenceSmoother(alpha=smoother_alpha, max_missing=3)
+
     def update(self, context: FrameContext) -> GazeMetricOutput:
         landmarks = context.face_landmarks
 
@@ -59,8 +65,10 @@ class GazeMetric(BaseMetric):
             return {"gaze_alert": False, "gaze_rate": 0.0}
 
         try:
-            left_ratio = left_eye_gaze_ratio(landmarks)
-            right_ratio = right_eye_gaze_ratio(landmarks)
+            left_ratio_raw = left_eye_gaze_ratio(landmarks)
+            right_ratio_raw = right_eye_gaze_ratio(landmarks)
+            left_ratio = self.left_smoother.update(left_ratio_raw) if left_ratio_raw else None
+            right_ratio = self.right_smoother.update(right_ratio_raw) if right_ratio_raw else None
         except (IndexError, ZeroDivisionError) as exc:
             logger.debug(f"Gaze computation failed: {exc}")
             self._history.append(False)

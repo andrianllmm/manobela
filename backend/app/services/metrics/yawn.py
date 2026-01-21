@@ -6,6 +6,7 @@ from app.core.config import settings
 from app.services.metrics.base_metric import BaseMetric, MetricOutputBase
 from app.services.metrics.frame_context import FrameContext
 from app.services.metrics.utils.mar import compute_mar
+from app.services.smoother import ScalarSmoother
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,7 @@ class YawnMetric(BaseMetric):
     DEFAULT_MIN_YAWN_DURATION_SEC = 0.5
     DEFAULT_YAWN_RATE_THRESHOLD = 0.1
     DEFAULT_WINDOW_SEC = 30
+    DEFAULT_SMOOTHER_ALPHA = 0.7
 
     def __init__(
         self,
@@ -49,6 +51,7 @@ class YawnMetric(BaseMetric):
         min_yawn_duration_sec: float = DEFAULT_MIN_YAWN_DURATION_SEC,
         yawn_rate_threshold: float = DEFAULT_YAWN_RATE_THRESHOLD,
         window_sec: int = DEFAULT_WINDOW_SEC,
+        smoother_alpha: float = DEFAULT_SMOOTHER_ALPHA,
     ):
         """
         Args:
@@ -60,6 +63,7 @@ class YawnMetric(BaseMetric):
             min_yawn_duration_sec: Minimum duration in seconds to count as yawn.
             yawn_rate_threshold: Threshold for yawn rate alert.
             window_sec: Rolling window duration in seconds for yawn rate calculation.
+            smoother_alpha: Smoother alpha for MAR smoothing.
         """
 
         if mar_threshold <= 0:
@@ -111,6 +115,8 @@ class YawnMetric(BaseMetric):
         # Rolling window to track yawning state per frame
         self._yawn_history: deque[bool] = deque(maxlen=self._window_size)
 
+        self.mar_smoother = ScalarSmoother(alpha=smoother_alpha, max_missing=3)
+
     def update(self, context: FrameContext) -> YawnMetricOutput:
         landmarks = context.face_landmarks
 
@@ -130,7 +136,8 @@ class YawnMetric(BaseMetric):
 
         # Compute MAR
         try:
-            mar = compute_mar(landmarks)
+            raw_mar = compute_mar(landmarks)
+            mar_value = self.mar_smoother.update(raw_mar)
         except (IndexError, ZeroDivisionError) as e:
             logger.debug(f"MAR computation failed: {e}")
             yawn_rate = self._calculate_yawn_rate()
@@ -145,7 +152,7 @@ class YawnMetric(BaseMetric):
                 "yawn_rate_alert": yawn_rate >= self._yawn_rate_threshold,
             }
 
-        if mar is None:
+        if mar_value is None:
             yawn_rate = self._calculate_yawn_rate()
             return {
                 "mar": None,
@@ -159,10 +166,10 @@ class YawnMetric(BaseMetric):
             }
 
         # State machine with hysteresis
-        if mar >= self._mar_threshold:
+        if mar_value >= self._mar_threshold:
             # Mouth opening - increment counter
             self._open_counter += 1
-        elif mar <= self._mar_close_threshold:
+        elif mar_value <= self._mar_close_threshold:
             # Mouth closed - reset state
             self._open_counter = 0
             self._yawn_active = False
@@ -179,7 +186,7 @@ class YawnMetric(BaseMetric):
         yawn_rate = self._calculate_yawn_rate()
 
         return {
-            "mar": mar,
+            "mar": mar_value,
             "yawning": self._yawn_active,
             "yawn_progress": min(
                 self._open_counter / self._min_yawn_duration_frames,
