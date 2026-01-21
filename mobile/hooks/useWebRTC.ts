@@ -11,6 +11,7 @@ import { MediaStream, RTCPeerConnection } from 'react-native-webrtc';
 import { WebSocketTransport } from '@/services/signaling/web-socket-transport';
 import RTCDataChannel from 'react-native-webrtc/lib/typescript/RTCDataChannel';
 import { fetchIceServers } from '@/services/ice-servers';
+import { mapNetworkErrorMessage } from '@/services/network-error';
 
 interface UseWebRTCProps {
   // WebSocket signaling endpoint
@@ -322,9 +323,15 @@ export const useWebRTC = ({ url, stream }: UseWebRTCProps): UseWebRTCReturn => {
       console.log('Offer sent, waiting for answer...');
     } catch (err: any) {
       console.error('Connection error:', err);
-      setErrorState(`Connection error: ${err.message}`, err?.cause?.toString?.());
+      const raw = String(err?.cause ?? err ?? '');
+
+      const friendly = mapNetworkErrorMessage(raw);
+      setErrorState(friendly, raw);
       setConnectionStatus('failed');
     }
+
+
+
   }, [stream, initPeerConnection, initTransport, initDataChannel, sendSignalingMessage, setErrorState]);
 
   /**
@@ -363,3 +370,7 @@ export const useWebRTC = ({ url, stream }: UseWebRTCProps): UseWebRTCReturn => {
     onDataMessage,
   };
 };
+function getErrorText(arg0: any) {
+  throw new Error('Function not implemented.');
+}
+
