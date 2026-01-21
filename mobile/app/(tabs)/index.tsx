@@ -1,38 +1,48 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Alert, View, ScrollView } from 'react-native';
+import { useKeepAwake } from 'expo-keep-awake';
+import { useLowBattery } from '@/hooks/useLowBattery';
 import { useCamera } from '@/hooks/useCamera';
 import { useMonitoringSession } from '@/hooks/useMonitoringSession';
+import { useAlerts } from '@/hooks/useAlerts';
 import { MediaStreamView } from '@/components/media-stream-view';
 import { ConnectionStatus } from '@/components/connection-status';
 import { Stack } from 'expo-router';
 import { MetricsDisplay } from '@/components/metrics/metrics-display';
 
-
-import {useSettings} from '@/hooks/useSettings';
+import { useSettings } from '@/hooks/useSettings';
 
 export default function MonitorScreen() {
-  const { localStream } = useCamera();
-  const {settings} = useSettings();
-  const wsUrl = useMemo(() =>{
+  useKeepAwake();
+
+  const { settings } = useSettings();
+  const wsUrl = useMemo(() => {
     const baseUrl = settings.wsBaseUrl || process.env.EXPO_PUBLIC_WS_BASE || ''; // If we cant find just return blank or ''
     return baseUrl ? `${baseUrl}/driver-monitoring` : '';
-  },[settings.wsBaseUrl]);
+  }, [settings.wsBaseUrl]);
 
+  const { localStream } = useCamera();
 
-  const {
-    sessionState,
-    inferenceData,
-    clientId,
-    transportStatus,
-    connectionStatus,
-    error,
-    hasCamera,
-    start,
-    stop,
-  } = useMonitoringSession({
-    url: wsUrl,
-    stream: localStream,
+  const { sessionState, inferenceData, clientId, error, hasCamera, start, stop } =
+    useMonitoringSession({
+      url: wsUrl,
+      stream: localStream,
+    });
+
+  useAlerts({
+    metrics: inferenceData?.metrics ?? null,
+    enabled: sessionState === 'active',
+    enableSpeechAlerts: settings.enableSpeechAlerts,
+    enableHapticAlerts: settings.enableHapticAlerts,
   });
+
+  const handleLowBattery = useCallback((level: number) => {
+    Alert.alert(
+      'Low Battery',
+      `Battery is at ${Math.round(level * 100)}%. Please consider charging your phone.`
+    );
+  }, []);
+  useLowBattery(0.25, handleLowBattery, sessionState === 'active');
 
   const handleToggle = useCallback(() => {
     if (sessionState === 'idle') {

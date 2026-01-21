@@ -1,5 +1,4 @@
 import logging
-from collections import deque
 
 from app.core.config import settings
 from app.services.metrics.base_metric import BaseMetric, MetricOutputBase
@@ -9,62 +8,95 @@ from app.services.metrics.utils.eye_gaze_ratio import (
     right_eye_gaze_ratio,
 )
 from app.services.metrics.utils.math import in_range
+from app.services.smoother import SequenceSmoother
 
 logger = logging.getLogger(__name__)
 
 
 class GazeMetricOutput(MetricOutputBase):
+    """
+    Output schema for the gaze metric.
+
+    Attributes:
+        gaze_alert: Whether gaze has been outside the configured range for at least min_sustained_sec.
+        gaze_sustained: Fraction of time the gaze has been continuous.
+    """
     gaze_alert: bool
-    gaze_rate: float
+    gaze_sustained: float
 
 
 class GazeMetric(BaseMetric):
     """
-    Computes whether the user's gaze is within an acceptable region.
-
-    The metric estimates gaze direction using iris position relative to eye
-    corners and eyelids for both eyes. It then checks if the gaze lies within
-    the configured horizontal and vertical ranges.
-
-    Coordinate System (used internally):
-        - X-axis: 0.0 (left) to 1.0 (right)
-        - Y-axis: 0.0 (top) to 1.0 (bottom)
+    Gaze metric using left and right eye gaze ratios.
     """
 
     DEFAULT_HORIZONTAL_RANGE = (0.35, 0.65)
     DEFAULT_VERTICAL_RANGE = (0.35, 0.65)
-    DEFAULT_WINDOW_SEC = 3
-    DEFAULT_THRESHOLD = 0.5
+    DEFAULT_MIN_SUSTAINED_SEC = 0.5
+    DEFAULT_SMOOTHER_ALPHA = 0.4
 
     def __init__(
         self,
         horizontal_range: tuple[float, float] = DEFAULT_HORIZONTAL_RANGE,
         vertical_range: tuple[float, float] = DEFAULT_VERTICAL_RANGE,
-        window_sec: int = DEFAULT_WINDOW_SEC,
-        threshold: float = DEFAULT_THRESHOLD,
+        min_sustained_sec: float = DEFAULT_MIN_SUSTAINED_SEC,
+        smoother_alpha: float = DEFAULT_SMOOTHER_ALPHA,
     ) -> None:
+        """
+        Args:
+            horizontal_range: Range of horizontal gaze deviation (0-1, 0-1).
+            vertical_range: Range of vertical gaze deviation (0-1, 0-1).
+            min_sustained_sec: Minimum duration in seconds to count as gaze (0-inf).
+            smoother_alpha: Smoother alpha for gaze smoothing (0-1).
+        """
+
+        # Validate inputs
+        if horizontal_range[0] < 0 or horizontal_range[0] > 1:
+            raise ValueError("horizontal_range[0] must be between (0, 1).")
+        if horizontal_range[1] < 0 or horizontal_range[1] > 1:
+            raise ValueError("horizontal_range[1] must be between (0, 1).")
+        if vertical_range[0] < 0 or vertical_range[0] > 1:
+            raise ValueError("vertical_range[0] must be between (0, 1).")
+        if vertical_range[1] < 0 or vertical_range[1] > 1:
+            raise ValueError("vertical_range[1] must be between (0, 1).")
+        if min_sustained_sec <= 0:
+            raise ValueError("min_sustained_sec must be positive.")
+
         self.horizontal_range = horizontal_range
         self.vertical_range = vertical_range
-        self.threshold = threshold
 
-        # Convert seconds to frames
-        self.window_size = max(1, int(window_sec * settings.target_fps))
-        self._history = deque(maxlen=self.window_size)
+        fps = getattr(settings, "target_fps", 15)
+        self.min_sustained_frames = max(1, int(min_sustained_sec * fps))
+
+        self._sustained_out_of_range_frames = 0
+        self._gaze_alert_state = False
+
+        self.left_smoother = SequenceSmoother(alpha=smoother_alpha, max_missing=3)
+        self.right_smoother = SequenceSmoother(alpha=smoother_alpha, max_missing=3)
 
     def update(self, context: FrameContext) -> GazeMetricOutput:
         landmarks = context.face_landmarks
-
         if not landmarks:
-            self._history.append(False)
-            return {"gaze_alert": False, "gaze_rate": 0.0}
+            return self._build_output()
 
         try:
-            left_ratio = left_eye_gaze_ratio(landmarks)
-            right_ratio = right_eye_gaze_ratio(landmarks)
+            left_ratio_raw = left_eye_gaze_ratio(landmarks)
+            right_ratio_raw = right_eye_gaze_ratio(landmarks)
+
+            left_ratio = (
+                self.left_smoother.update(left_ratio_raw)
+                if left_ratio_raw
+                else None
+            )
+            right_ratio = (
+                self.right_smoother.update(right_ratio_raw)
+                if right_ratio_raw
+                else None
+            )
+
         except (IndexError, ZeroDivisionError) as exc:
             logger.debug(f"Gaze computation failed: {exc}")
-            self._history.append(False)
-            return {"gaze_alert": False, "gaze_rate": 0.0}
+            return self._build_output()
 
         if left_ratio is None and right_ratio is None:
             gaze_on_road = False
@@ -92,15 +124,28 @@ class GazeMetric(BaseMetric):
 
             gaze_on_road = horizontal_ok and vertical_ok
 
-        # Convert to alert flag
-        gaze_alert_frame = not gaze_on_road
-        self._history.append(gaze_alert_frame)
+        if not gaze_on_road:
+            self._sustained_out_of_range_frames += 1
+        else:
+            self._sustained_out_of_range_frames = 0
+            self._gaze_alert_state = False
 
-        valid_frames = [v for v in self._history if v is not None]
-        ratio = sum(valid_frames) / len(valid_frames) if valid_frames else 0.0
-        alert = ratio >= self.threshold
+        if self._sustained_out_of_range_frames >= self.min_sustained_frames:
+            self._gaze_alert_state = True
 
-        return {"gaze_alert": alert, "gaze_rate": ratio}
+        return self._build_output()
 
     def reset(self) -> None:
-        self._history.clear()
+        self._sustained_out_of_range_frames = 0
+        self._gaze_alert_state = False
+        self.left_smoother.reset()
+        self.right_smoother.reset()
+
+    def _build_output(self) -> GazeMetricOutput:
+        return {
+            "gaze_alert": self._gaze_alert_state,
+            "gaze_sustained": self._calc_sustained(),
+        }
+
+    def _calc_sustained(self) -> float:
+        return min(self._sustained_out_of_range_frames / self.min_sustained_frames, 1.0)
