@@ -3,7 +3,7 @@ import { View, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { useMemo, useState } from 'react';
 
 import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 
@@ -65,7 +65,7 @@ export default function UploadsScreen() {
     }
 
     const selection = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+      mediaTypes: ['videos'],
       allowsEditing: false,
       quality: 1,
     });
