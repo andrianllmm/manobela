@@ -8,6 +8,11 @@ type NewMetric = typeof metrics.$inferInsert;
 type NewSession = typeof sessions.$inferInsert;
 
 /**
+ * Read-only flag
+ */
+let readOnly = false;
+
+/**
  * In-memory buffer
  */
 const metricBuffer: NewMetric[] = [];
@@ -34,6 +39,7 @@ const MAX_BUFFER_SIZE = 20; // flush when buffer is full
  * Flush buffer to database in a transaction
  */
 const flushBuffer = async () => {
+  if (readOnly) return; // <-- BLOCK WRITES
   if (metricBuffer.length === 0) return;
 
   const batch = metricBuffer.splice(0, metricBuffer.length);
@@ -53,10 +59,16 @@ const flushBuffer = async () => {
 };
 
 export const sessionLogger = {
+  /** Enable/disable read-only mode */
+  setReadOnly: (value: boolean) => {
+    readOnly = value;
+  },
+
   /**
    * Log metrics for the current session
    */
   logMetrics: (data: InferenceData | null) => {
+    if (readOnly) return; // blocks writes
     if (!currentSessionId || !data?.metrics) return;
 
     const now = Date.now();
@@ -99,14 +111,12 @@ export const sessionLogger = {
       phoneUsageSustained: m.phone_usage.phone_usage_sustained,
     } as NewMetric);
 
-    // Schedule flush if not already scheduled
     if (!flushTimer) {
       flushTimer = setTimeout(() => {
         void flushBuffer();
       }, FLUSH_INTERVAL_MS);
     }
 
-    // Flush immediately if buffer is full
     if (metricBuffer.length >= MAX_BUFFER_SIZE) {
       void flushBuffer();
     }
@@ -116,6 +126,8 @@ export const sessionLogger = {
    * Start a new session
    */
   startSession: async (clientId: string | null) => {
+    if (readOnly) return null; // blocks writes
+
     const id = uuid.v4();
 
     await db.insert(sessions).values({
@@ -134,9 +146,10 @@ export const sessionLogger = {
    * End the current session
    */
   endSession: async () => {
+    if (readOnly) return; // block writes
+
     if (!currentSessionId) return;
 
-    // Flush any pending metrics first
     await flushBuffer();
 
     const endedAt = Date.now();

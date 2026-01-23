@@ -35,7 +35,7 @@ const LINKS = {
 };
 
 export default function SettingsScreen() {
-  const db = useDatabase();
+  const { db } = useDatabase();
   const { refresh: refreshInsights } = useInsightRefresh();
   const router = useRouter();
   const { colorScheme, setColorScheme } = useColorScheme();

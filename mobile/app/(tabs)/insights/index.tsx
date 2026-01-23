@@ -9,7 +9,7 @@ import { useRouter } from 'expo-router';
 import { useInsightRefresh } from '@/hooks/useInsightsRefresh';
 
 export default function InsightsScreen() {
-  const db = useDatabase();
+  const { db } = useDatabase();
   const router = useRouter();
   const { tick } = useInsightRefresh();
 

@@ -12,7 +12,7 @@ import { EarTrendChart } from '@/components/charts/ear-trend';
 import { MarTrendChart } from '@/components/charts/mar-trend';
 
 export default function SessionDetailsScreen() {
-  const db = useDatabase();
+  const { db } = useDatabase();
   const { sessionId } = useLocalSearchParams<{ sessionId: string }>();
 
   const { data: sessionList } = useLiveQuery(
