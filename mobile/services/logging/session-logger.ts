@@ -13,25 +13,6 @@ const LOG_INTERVAL_MS = 3_000; // throttle to per n seconds
 
 export const sessionLogger = {
   /**
-   * Start a new session
-   */
-  startSession: async (clientId: string | null) => {
-    const id = uuid.v4();
-    currentSessionId = id;
-
-    console.log(`Start session of client ${clientId}`);
-
-    await db.insert(sessions).values({
-      id,
-      clientId: clientId ?? 'unknown',
-      startedAt: Date.now(),
-    } as NewSession);
-
-    lastLoggedAt = 0;
-    return id;
-  },
-
-  /**
    * Log metrics for the current session
    */
   logMetrics: async (data: InferenceData | null) => {
@@ -81,6 +62,26 @@ export const sessionLogger = {
   },
 
   /**
+   * Start a new session
+   */
+  startSession: async (clientId: string | null) => {
+    const id = uuid.v4();
+
+    console.log(`Start session of client ${clientId}`);
+
+    await db.insert(sessions).values({
+      id,
+      clientId: clientId ?? 'unknown',
+      startedAt: Date.now(),
+    } as NewSession);
+
+    currentSessionId = id;
+    lastLoggedAt = 0;
+
+    return id;
+  },
+
+  /**
    * End the current session
    */
   endSession: async () => {
@@ -92,6 +93,12 @@ export const sessionLogger = {
       .select({ startedAt: sessions.startedAt })
       .from(sessions)
       .where(eq(sessions.id, currentSessionId));
+
+    if (sessionRows.length === 0) {
+      console.error('Session not found for ID:', currentSessionId);
+      currentSessionId = null;
+      return;
+    }
 
     const startedAt = sessionRows[0]?.startedAt ?? endedAt;
     const durationMs = endedAt - startedAt;
