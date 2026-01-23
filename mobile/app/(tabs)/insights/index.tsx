@@ -1,46 +1,22 @@
-import React, { useCallback, useState } from 'react';
-import { View, FlatList, Alert, TouchableOpacity } from 'react-native';
+import { View, FlatList, TouchableOpacity } from 'react-native';
 import { Text } from '@/components/ui/text';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { sessions } from '@/db/schema';
 import { desc } from 'drizzle-orm';
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
-import { sessionLogger } from '@/services/logging/session-logger';
 import { useDatabase } from '@/components/database-provider';
 import { useRouter } from 'expo-router';
+import { useInsightRefresh } from '@/hooks/useInsightsRefresh';
 
 export default function InsightsScreen() {
   const db = useDatabase();
   const router = useRouter();
-
-  const [refreshKey, setRefreshKey] = useState(0);
+  const { tick } = useInsightRefresh();
 
   const { data: sessionList = [] } = useLiveQuery(
     db.select().from(sessions).orderBy(desc(sessions.startedAt)),
-    [refreshKey]
+    [tick]
   );
-
-  const clearAllData = useCallback(() => {
-    Alert.alert('Clear all data?', 'This will delete all sessions and metrics permanently.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await db.delete(sessions);
-            await sessionLogger.endSession();
-            await sessionLogger.reset();
-            setRefreshKey((k) => k + 1);
-          } catch (error) {
-            console.error('Failed to clear data:', error);
-            Alert.alert('Error', 'Failed to clear data. Please try again.');
-          }
-        },
-      },
-    ]);
-  }, []);
 
   return (
     <FlatList
@@ -50,10 +26,6 @@ export default function InsightsScreen() {
       ListHeaderComponent={
         <View className="px-3 py-2">
           <Text className="mb-4 text-lg font-bold">Insights</Text>
-
-          <Button onPress={clearAllData} className="mb-4">
-            <Text>Clear all sessions</Text>
-          </Button>
 
           {sessionList.length === 0 && (
             <Text className="py-2 text-center text-sm text-muted">No sessions found.</Text>

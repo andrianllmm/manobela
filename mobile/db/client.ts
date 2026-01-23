@@ -9,3 +9,6 @@ const expoDb = openDatabaseSync('app.db', { enableChangeListener: true });
  * Global database client
  */
 export const db = drizzle(expoDb, { schema: { sessions, metrics } });
+
+// Export a stable type for external use
+export type AppDatabase = typeof db;

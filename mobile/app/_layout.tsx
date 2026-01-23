@@ -9,6 +9,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
 import { SettingsProvider } from '@/hooks/useSettings';
 import { DatabaseProvider } from '@/components/database-provider';
+import { InsightRefreshProvider } from '@/hooks/useInsightsRefresh';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -21,13 +22,15 @@ export default function RootLayout() {
   return (
     <DatabaseProvider>
       <SettingsProvider>
-        <ThemeProvider value={NAV_THEME[colorScheme ?? 'light']}>
-          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-          <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          </Stack>
-          <PortalHost />
-        </ThemeProvider>
+        <InsightRefreshProvider>
+          <ThemeProvider value={NAV_THEME[colorScheme ?? 'light']}>
+            <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+            <Stack>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            </Stack>
+            <PortalHost />
+          </ThemeProvider>
+        </InsightRefreshProvider>
       </SettingsProvider>
     </DatabaseProvider>
   );
