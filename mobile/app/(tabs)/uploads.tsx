@@ -62,7 +62,7 @@ export default function UploadsScreen() {
     }
 
     const selection = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: [ImagePicker.MediaTypeOptions.Videos],
+      mediaTypes: [ImagePicker.MediaType.Videos],
       allowsEditing: false,
       quality: 1,
     });
