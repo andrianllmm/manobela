@@ -7,16 +7,57 @@ import { eq } from 'drizzle-orm';
 type NewMetric = typeof metrics.$inferInsert;
 type NewSession = typeof sessions.$inferInsert;
 
+/**
+ * In-memory buffer
+ */
+const metricBuffer: NewMetric[] = [];
+
+/**
+ * Flush timer handle
+ */
+let flushTimer: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * Session state
+ */
 let currentSessionId: string | null = null;
 let lastLoggedAt = 0;
-const LOG_INTERVAL_MS = 5_000; // throttle to per n seconds
+
+/**
+ * Controls
+ */
+const LOG_INTERVAL_MS = 3_000; // throttle logging for n seconds
+const FLUSH_INTERVAL_MS = 6_000; // flush every n seconds
+const MAX_BUFFER_SIZE = 20; // flush when buffer is full
+
+/**
+ * Flush buffer to database in a transaction
+ */
+const flushBuffer = async () => {
+  if (metricBuffer.length === 0) return;
+
+  const batch = metricBuffer.splice(0, metricBuffer.length);
+
+  try {
+    await db.transaction(async (tx) => {
+      await tx.insert(metrics).values(batch);
+    });
+  } catch (error) {
+    console.error('Failed to flush metrics buffer:', error);
+  } finally {
+    if (flushTimer) {
+      clearTimeout(flushTimer);
+      flushTimer = null;
+    }
+  }
+};
 
 export const sessionLogger = {
   /**
    * Log metrics for the current session
    */
-  logMetrics: async (data: InferenceData | null) => {
-    if (!currentSessionId || !data || !data.metrics) return;
+  logMetrics: (data: InferenceData | null) => {
+    if (!currentSessionId || !data?.metrics) return;
 
     const now = Date.now();
     if (now - lastLoggedAt < LOG_INTERVAL_MS) return;
@@ -25,9 +66,7 @@ export const sessionLogger = {
     const m = data.metrics;
     const id = uuid.v4();
 
-    console.log(`Log metrics for session ${currentSessionId}`);
-
-    await db.insert(metrics).values({
+    metricBuffer.push({
       id,
       sessionId: currentSessionId,
       timestamp: now,
@@ -45,12 +84,12 @@ export const sessionLogger = {
       yawnSustained: m.yawn.yawn_sustained,
       yawnCount: m.yawn.yawn_count,
 
-      yawAlert: m.head_pose.yaw_alert,
-      pitchAlert: m.head_pose.pitch_alert,
-      rollAlert: m.head_pose.roll_alert,
       yaw: m.head_pose.yaw,
       pitch: m.head_pose.pitch,
       roll: m.head_pose.roll,
+      yawAlert: m.head_pose.yaw_alert,
+      pitchAlert: m.head_pose.pitch_alert,
+      rollAlert: m.head_pose.roll_alert,
       headPoseSustained: m.head_pose.head_pose_sustained,
 
       gazeAlert: m.gaze.gaze_alert,
@@ -59,6 +98,18 @@ export const sessionLogger = {
       phoneUsage: m.phone_usage.phone_usage,
       phoneUsageSustained: m.phone_usage.phone_usage_sustained,
     } as NewMetric);
+
+    // Schedule flush if not already scheduled
+    if (!flushTimer) {
+      flushTimer = setTimeout(() => {
+        void flushBuffer();
+      }, FLUSH_INTERVAL_MS);
+    }
+
+    // Flush immediately if buffer is full
+    if (metricBuffer.length >= MAX_BUFFER_SIZE) {
+      void flushBuffer();
+    }
   },
 
   /**
@@ -66,8 +117,6 @@ export const sessionLogger = {
    */
   startSession: async (clientId: string | null) => {
     const id = uuid.v4();
-
-    console.log(`Start session of client ${clientId}`);
 
     await db.insert(sessions).values({
       id,
@@ -87,6 +136,9 @@ export const sessionLogger = {
   endSession: async () => {
     if (!currentSessionId) return;
 
+    // Flush any pending metrics first
+    await flushBuffer();
+
     const endedAt = Date.now();
 
     const sessionRows = await db
@@ -102,8 +154,6 @@ export const sessionLogger = {
 
     const startedAt = sessionRows[0]?.startedAt ?? endedAt;
     const durationMs = endedAt - startedAt;
-
-    console.log(`End session of session ${currentSessionId}`);
 
     await db
       .update(sessions)
@@ -122,6 +172,12 @@ export const sessionLogger = {
   reset: async () => {
     currentSessionId = null;
     lastLoggedAt = 0;
+    metricBuffer.length = 0;
+
+    if (flushTimer) {
+      clearTimeout(flushTimer);
+      flushTimer = null;
+    }
   },
 
   /** Get the current session ID */
