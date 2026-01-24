@@ -15,7 +15,6 @@ import {
   HelpCircle,
   Github,
   Info,
-  Link2,
   ShieldCheck,
   FileText,
   Languages,
@@ -26,12 +25,15 @@ import {
 } from 'lucide-react-native';
 import { useInsightRefresh } from '@/hooks/useInsightsRefresh';
 
+const websiteUrl = process.env.NEXT_PUBLIC_WEBSITE_BASE || 'https://manobela.site';
+const githubUrl =
+  process.env.NEXT_PUBLIC_GITHUB_BASE || 'https://github.com/popcorn-prophets/manobela';
+
 const LINKS = {
-  faq: 'https://github.com/popcorn-prophets/manobela/blob/main/README.md',
-  issues: 'https://github.com/popcorn-prophets/manobela/issues',
-  privacy: 'https://github.com/popcorn-prophets/manobela/blob/master/CODE_OF_CONDUCT.md',
-  terms: 'https://github.com/popcorn-prophets/manobela/blob/master/LICENSE',
-  dataProtection: 'https://github.com/popcorn-prophets/manobela/blob/master/CODE_OF_CONDUCT.md',
+  faq: `${websiteUrl}/#faq`,
+  issues: `${githubUrl}/issues`,
+  privacy: `${websiteUrl}/privacy`,
+  terms: `${websiteUrl}/terms`,
 };
 
 export default function SettingsScreen() {
@@ -167,13 +169,8 @@ export default function SettingsScreen() {
         />
         <SettingRow
           icon={FileText}
-          label="Terms & Conditions"
+          label="Terms of Service"
           onPress={() => handleOpenLink(LINKS.terms)}
-        />
-        <SettingRow
-          icon={Link2}
-          label="Data Protection"
-          onPress={() => handleOpenLink(LINKS.dataProtection)}
         />
       </Section>
 

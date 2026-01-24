@@ -32,8 +32,8 @@ const footerLinks = {
     { name: 'Contact', href: '/#contact' },
   ],
   legal: [
-    { name: 'Privacy', href: '/#privacy' },
-    { name: 'Terms', href: '/#terms' },
+    { name: 'Privacy', href: '/privacy' },
+    { name: 'Terms', href: '/terms' },
   ],
 };
 
@@ -206,14 +206,6 @@ export function LandingFooter() {
             </div>
             <span className="hidden sm:inline">•</span>
             <span>© {new Date().getFullYear()}</span>
-          </div>
-          <div className="flex items-center space-x-4 text-sm text-muted-foreground mt-4 md:mt-0">
-            <a href="#privacy" className="hover:text-foreground transition-colors">
-              Privacy Policy
-            </a>
-            <a href="#terms" className="hover:text-foreground transition-colors">
-              Terms of Service
-            </a>
           </div>
         </div>
       </div>

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 
 import QRCode from 'react-qr-code';
+import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Download Manobela',
@@ -71,7 +72,14 @@ export default function DownloadPage() {
               <li>Follow the on-screen instructions to install.</li>
             </ol>
             <p className="text-xs text-muted-foreground mt-6 text-center">
-              By downloading, you agree to our Terms of Service and Privacy Policy.
+              By downloading, you agree to our{' '}
+              <Link href="/terms" className="text-primary">
+                Terms of Service
+              </Link>{' '}
+              and{' '}
+              <Link href="/privacy" className="text-primary">
+                Privacy Policy
+              </Link>
             </p>
           </section>
         </div>
