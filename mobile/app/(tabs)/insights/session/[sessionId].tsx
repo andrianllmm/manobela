@@ -1,13 +1,15 @@
 import React, { useMemo, useCallback } from 'react';
-import { View, FlatList } from 'react-native';
+import { View, FlatList, Alert } from 'react-native';
 import { Text } from '@/components/ui/text';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { metrics, sessions } from '@/db/schema';
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { useDatabase } from '@/components/database-provider';
-import { useLocalSearchParams, Stack } from 'expo-router';
+import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { desc, eq } from 'drizzle-orm';
 
+import { useInsightRefresh } from '@/hooks/useInsightsRefresh';
 import { SessionTimeRange } from '@/components/insights/session-time-range';
 import { EarTrendChart } from '@/components/charts/ear-trend';
 import { MarTrendChart } from '@/components/charts/mar-trend';
@@ -16,7 +18,9 @@ import { Badge } from '@/components/ui/badge';
 
 export default function SessionDetailsScreen() {
   const { db } = useDatabase();
+  const router = useRouter();
   const { sessionId } = useLocalSearchParams<{ sessionId: string }>();
+  const { refresh } = useInsightRefresh();
 
   const { data: sessionList } = useLiveQuery(
     db.select().from(sessions).where(eq(sessions.id, sessionId)),
@@ -68,7 +72,6 @@ export default function SessionDetailsScreen() {
     const ear: number[] = [];
     const mar: number[] = [];
 
-    // Iterate oldest → newest for chart ordering
     for (let i = sessionMetrics.length - 1; i >= 0; i--) {
       const m = sessionMetrics[i];
 
@@ -78,12 +81,8 @@ export default function SessionDetailsScreen() {
       if (m.faceMissing) faceMissing++;
       if (m.yawAlert || m.pitchAlert || m.rollAlert) headPoseAlerts++;
 
-      if (typeof m.ear === 'number' && !Number.isNaN(m.ear)) {
-        ear.push(m.ear);
-      }
-      if (typeof m.mar === 'number' && !Number.isNaN(m.mar)) {
-        mar.push(m.mar);
-      }
+      if (typeof m.ear === 'number' && !Number.isNaN(m.ear)) ear.push(m.ear);
+      if (typeof m.mar === 'number' && !Number.isNaN(m.mar)) mar.push(m.mar);
     }
 
     return {
@@ -92,12 +91,31 @@ export default function SessionDetailsScreen() {
       headPoseAlertPercent: headPoseAlerts / total,
       phoneUsagePercent: phoneUsage / total,
       faceMissingPercent: faceMissing / total,
-      // latest value due to DESC(timestamp) query
       totalYawnCount: sessionMetrics[0]?.yawnCount ?? 0,
       earValues: ear,
       marValues: mar,
     };
   }, [sessionMetrics]);
+
+  const handleDelete = useCallback(() => {
+    Alert.alert(
+      'Delete Session',
+      'Are you sure you want to delete this session and all its metrics?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            await db.delete(metrics).where(eq(metrics.sessionId, sessionId));
+            await db.delete(sessions).where(eq(sessions.id, sessionId));
+            refresh(); // update Insights screen
+            router.replace('/insights'); // navigate back
+          },
+        },
+      ]
+    );
+  }, [db, sessionId, refresh, router]);
 
   const HeaderComponent = useCallback(() => {
     return (
@@ -156,6 +174,14 @@ export default function SessionDetailsScreen() {
             </View>
           </CardContent>
         </Card>
+
+        {!isActive && (
+          <View className="my-8">
+            <Button variant="destructive" className="mb-4" onPress={handleDelete}>
+              <Text>Delete Session</Text>
+            </Button>
+          </View>
+        )}
       </>
     );
   }, [
@@ -168,6 +194,8 @@ export default function SessionDetailsScreen() {
     faceMissingPercent,
     earValues,
     marValues,
+    isActive,
+    handleDelete,
   ]);
 
   return (
