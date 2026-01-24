@@ -18,28 +18,28 @@ const newsletterSchema = z.object({
 
 const footerLinks = {
   product: [
-    { name: 'Features', href: '#features' },
-    { name: 'Pricing', href: '#pricing' },
-    { name: 'API', href: '#api' },
-    { name: 'Documentation', href: '#docs' },
+    { name: 'Features', href: '/#features' },
+    { name: 'Pricing', href: '/#pricing' },
+    { name: 'API', href: '/#api' },
+    { name: 'Documentation', href: '/#docs' },
   ],
   company: [
-    { name: 'About', href: '#about' },
-    { name: 'Blog', href: '#blog' },
-    { name: 'Careers', href: '#careers' },
-    { name: 'Press', href: '#press' },
+    { name: 'About', href: '/#about' },
+    { name: 'Blog', href: '/#blog' },
+    { name: 'Careers', href: '/#careers' },
+    { name: 'Press', href: '/#press' },
   ],
   resources: [
-    { name: 'Help Center', href: '#help' },
-    { name: 'Community', href: '#community' },
-    { name: 'Guides', href: '#guides' },
-    { name: 'Webinars', href: '#webinars' },
+    { name: 'Help Center', href: '/#help' },
+    { name: 'Community', href: '/#community' },
+    { name: 'Guides', href: '/#guides' },
+    { name: 'Webinars', href: '/#webinars' },
   ],
   legal: [
-    { name: 'Privacy', href: '#privacy' },
-    { name: 'Terms', href: '#terms' },
-    { name: 'Security', href: '#security' },
-    { name: 'Status', href: '#status' },
+    { name: 'Privacy', href: '/#privacy' },
+    { name: 'Terms', href: '/#terms' },
+    { name: 'Security', href: '/#security' },
+    { name: 'Status', href: '/#status' },
   ],
 };
 

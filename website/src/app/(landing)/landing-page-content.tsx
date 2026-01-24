@@ -1,5 +1,7 @@
 'use client';
-import { LandingNavbar } from './components/navbar';
+
+import { LandingNavbar } from '@/components/navbar';
+import { LandingFooter } from '@/components/footer';
 import { HeroSection } from './components/hero-section';
 import { LogoCarousel } from './components/logo-carousel';
 import { StatsSection } from './components/stats-section';
@@ -10,7 +12,6 @@ import { PricingSection } from './components/pricing-section';
 import { CTASection } from './components/cta-section';
 import { ContactSection } from './components/contact-section';
 import { FaqSection } from './components/faq-section';
-import { LandingFooter } from './components/footer';
 import { AboutSection } from './components/about-section';
 
 export function LandingPageContent() {

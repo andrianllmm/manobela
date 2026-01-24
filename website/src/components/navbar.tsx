@@ -16,12 +16,12 @@ import { ModeToggle } from '@/components/mode-toggle';
 import { useTheme } from '@/hooks/use-theme';
 
 const navigationItems = [
-  { name: 'Home', href: '#hero' },
-  { name: 'Features', href: '#features' },
-  { name: 'Team', href: '#team' },
-  { name: 'Pricing', href: '#pricing' },
-  { name: 'FAQ', href: '#faq' },
-  { name: 'Contact', href: '#contact' },
+  { name: 'Home', href: '/#hero' },
+  { name: 'Features', href: '/#features' },
+  { name: 'Team', href: '/#team' },
+  { name: 'Pricing', href: '/#pricing' },
+  { name: 'FAQ', href: '/#faq' },
+  { name: 'Contact', href: '/#contact' },
 ];
 
 // Smooth scroll function
