@@ -24,7 +24,7 @@ class PhoneUsageMetric(BaseMetric):
 
     DEFAULT_CONF = 0.5
     DEFAULT_MIN_USAGE_DURATION_SEC = 0.5
-    DEFAULT_MAX_MISSED_SEC = 0.2
+    DEFAULT_MAX_MISSED_SEC = 0.3
 
     def __init__(
         self,
