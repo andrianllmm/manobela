@@ -41,9 +41,9 @@ interface UseWebRTCReturn {
 
   // Low-level escape hatches
   sendSignalingMessage: (msg: SignalingMessage) => void;
-  onSignalingMessage: (handler: (msg: SignalingMessage) => void) => void;
+  onSignalingMessage: (handler: (msg: SignalingMessage) => void) => () => void;
   sendDataMessage: (msg: any) => void;
-  onDataMessage: (handler: (msg: any) => void) => void;
+  onDataMessage: (handler: (msg: any) => void) => () => void;
 }
 
 /**
@@ -94,6 +94,9 @@ export const useWebRTC = ({ url, stream }: UseWebRTCProps): UseWebRTCReturn => {
   // Allow external subscribers to observe raw signaling traffic
   const onSignalingMessage = useCallback((handler: (msg: SignalingMessage) => void) => {
     signalingHandlers.current.push(handler);
+    return () => {
+      signalingHandlers.current = signalingHandlers.current.filter((cb) => cb !== handler);
+    };
   }, []);
 
   // Core signaling message dispatcher
@@ -165,6 +168,9 @@ export const useWebRTC = ({ url, stream }: UseWebRTCProps): UseWebRTCReturn => {
   // Allow external subscribers to observe raw data channel traffic
   const onDataMessage = useCallback((handler: (msg: any) => void) => {
     dataChannelHandlers.current.push(handler);
+    return () => {
+      dataChannelHandlers.current = dataChannelHandlers.current.filter((cb) => cb !== handler);
+    };
   }, []);
 
   // Core data channel message dispatcher
@@ -379,6 +385,11 @@ export const useWebRTC = ({ url, stream }: UseWebRTCProps): UseWebRTCReturn => {
     if (pcRef.current) {
       pcRef.current.close();
       pcRef.current = null;
+    }
+
+    if (dataChannelRef.current) {
+      dataChannelRef.current.close();
+      dataChannelRef.current = null;
     }
 
     setConnectionStatus('closed');
