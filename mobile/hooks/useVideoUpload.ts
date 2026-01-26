@@ -82,7 +82,11 @@ export const useVideoUpload = (apiBaseUrl: string): UseVideoUploadResult => {
     } as unknown as Blob);
 
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', `${apiBaseUrl}/driver-monitoring/process-video`);
+    const uploadUrl =
+      `${apiBaseUrl}/driver-monitoring/process-video` +
+      `?group_interval_sec=5&include_frames=false`;
+    xhr.open('POST', uploadUrl);
+    xhr.responseType = 'json';
     xhr.setRequestHeader('Accept', 'application/json');
 
     xhr.upload.onprogress = (event) => {
@@ -102,16 +106,26 @@ export const useVideoUpload = (apiBaseUrl: string): UseVideoUploadResult => {
     xhr.onload = () => {
       setIsUploading(false);
       setIsProcessing(false);
+
+      const responseBody = xhr.response ?? xhr.responseText;
+
       if (xhr.status >= 200 && xhr.status < 300) {
         try {
-          const parsed = JSON.parse(xhr.responseText) as VideoProcessingResponse;
-          setResult(parsed);
+          const parsed =
+            typeof responseBody === 'string'
+              ? (JSON.parse(responseBody) as VideoProcessingResponse)
+              : (responseBody as VideoProcessingResponse);
+          const sanitized = { ...parsed, frames: undefined };
+          setResult(sanitized);
         } catch {
           setError('Upload succeeded but response could not be parsed.');
         }
       } else {
         try {
-          const parsed = JSON.parse(xhr.responseText) as { detail?: string };
+          const parsed =
+            typeof responseBody === 'string'
+              ? (JSON.parse(responseBody) as { detail?: string })
+              : (responseBody as { detail?: string });
           setError(parsed.detail ?? 'Upload failed. Please try again.');
         } catch {
           setError('Upload failed. Please try again.');

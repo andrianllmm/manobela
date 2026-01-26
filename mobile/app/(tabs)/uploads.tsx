@@ -6,17 +6,11 @@ import { Text } from '@/components/ui/text';
 
 import { useSettings } from '@/hooks/useSettings';
 import { useVideoUpload } from '@/hooks/useVideoUpload';
-import type { VideoFrameResult } from '@/types/video';
 import {
-  aggregateMetrics,
-  averageFaceLandmarks,
   formatBytes,
   formatDuration,
   formatJsonFull,
   formatJsonPreview,
-  mergeUniqueDetections,
-  parseTimestampSeconds,
-  pickThumbnail,
 } from '@/utils/videoFormatter';
 
 export default function UploadsScreen() {
@@ -39,36 +33,7 @@ export default function UploadsScreen() {
 
   const [expandedGroups, setExpandedGroups] = useState<Record<number, boolean>>({});
 
-  const groupedFrames = useMemo(() => {
-    if (!result?.frames?.length) return [];
-    const buckets = new Map<number, VideoFrameResult[]>();
-    for (const frame of result.frames) {
-      const seconds = parseTimestampSeconds(frame.timestamp);
-      const bucketIndex = seconds === null ? 0 : Math.floor(seconds / 5);
-      const bucket = buckets.get(bucketIndex);
-      if (bucket) {
-        bucket.push(frame);
-      } else {
-        buckets.set(bucketIndex, [frame]);
-      }
-    }
-
-    return Array.from(buckets.entries())
-      .sort(([a], [b]) => a - b)
-      .map(([bucketIndex, frames]) => ({
-        bucketIndex,
-        startSec: bucketIndex * 5,
-        endSec: bucketIndex * 5 + 5,
-        frames,
-        aggregate: {
-          resolution: frames[0]?.resolution ?? null,
-          face_landmarks: averageFaceLandmarks(frames),
-          object_detections: mergeUniqueDetections(frames),
-          metrics: aggregateMetrics(frames),
-          thumbnail_base64: pickThumbnail(frames),
-        },
-      }));
-  }, [result]);
+  const groups = useMemo(() => result?.groups ?? [], [result]);
 
   return (
     <ScrollView className="flex-1 px-4 py-6">
@@ -110,7 +75,9 @@ export default function UploadsScreen() {
         </Button>
 
         {isUploading ? (
-          <Text className="text-sm text-muted-foreground">Upload progress: {uploadProgress}%</Text>
+          <Text className="text-sm text-muted-foreground">
+            Upload progress: {uploadProgress}%
+          </Text>
         ) : null}
 
         {isProcessing ? (
@@ -143,24 +110,24 @@ export default function UploadsScreen() {
               Grouped by 5-second windows. Each box shows the aggregate result for the interval.
             </Text>
             <View className="mt-2 gap-3">
-              {groupedFrames.map((group) => (
+              {groups.map((group) => (
                 <View
-                  key={`group-${group.bucketIndex}`}
+                  key={`group-${group.bucket_index}`}
                   className="rounded-md border border-border bg-muted/30 p-3">
                   <Pressable
                     onPress={() =>
                       setExpandedGroups((prev) => ({
                         ...prev,
-                        [group.bucketIndex]: !prev[group.bucketIndex],
+                        [group.bucket_index]: !prev[group.bucket_index],
                       }))
                     }
                     className="gap-1">
                     <Text className="text-sm font-semibold">
-                      {group.startSec}s - {group.endSec}s
+                      {Math.floor(group.start_sec)}s - {Math.floor(group.end_sec)}s
                     </Text>
                     <Text className="text-xs text-muted-foreground">
-                      Frames: {group.frames.length} -{' '}
-                      {expandedGroups[group.bucketIndex] ? 'Hide details' : 'Show details'}
+                      Frames: {group.frame_count} -{' '}
+                      {expandedGroups[group.bucket_index] ? 'Hide details' : 'Show details'}
                     </Text>
                   </Pressable>
                   <View className="mt-2 gap-1">
@@ -182,7 +149,7 @@ export default function UploadsScreen() {
                     <Text className="text-xs text-muted-foreground">
                       Metrics: {formatJsonPreview(group.aggregate.metrics)}
                     </Text>
-                    {expandedGroups[group.bucketIndex] ? (
+                    {expandedGroups[group.bucket_index] ? (
                       <View className="mt-2 gap-2">
                         {group.aggregate.thumbnail_base64 ? (
                           <Image

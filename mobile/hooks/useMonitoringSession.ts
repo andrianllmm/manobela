@@ -56,6 +56,7 @@ export const useMonitoringSession = ({
 
   // Tracks session lifecycle
   const [sessionState, setSessionState] = useState<SessionState>('idle');
+  const sessionStateRef = useRef<SessionState>('idle');
 
   // Use a ref to avoid re-rendering on every message
   const latestInferenceRef = useRef<InferenceData | null>(null);
@@ -115,6 +116,10 @@ export const useMonitoringSession = ({
     return () => clearInterval(timer);
   }, [sessionState, sessionStartedAt]);
 
+  useEffect(() => {
+    sessionStateRef.current = sessionState;
+  }, [sessionState]);
+
   // Subscribe to data channel messages
   useEffect(() => {
     const handler = (msg: any) => {
@@ -122,13 +127,16 @@ export const useMonitoringSession = ({
       latestInferenceRef.current = msg;
 
       // Update state only if UI is active and needs it
-      if (sessionState === 'active') {
+      if (sessionStateRef.current === 'active') {
         setInferenceData(msg);
       }
     };
 
-    onDataMessage(handler);
-  }, [onDataMessage, sessionState]);
+    const unsubscribe = onDataMessage(handler);
+    return () => {
+      unsubscribe();
+    };
+  }, [onDataMessage]);
 
   // Log metrics
   useEffect(() => {

@@ -145,6 +145,20 @@ async def driver_monitoring(
             await pc.close()
 
 
+@router.get("/connections")
+async def connections(
+    connection_manager: ConnectionManagerDep,
+):
+    """
+    Returns an overview of active driver monitoring sessions and resources.
+    """
+    return {
+        "active_connections": len(connection_manager.active_connections),
+        "peer_connections": len(connection_manager.peer_connections),
+        "data_channels": len(connection_manager.data_channels),
+        "frame_tasks": len(connection_manager.frame_tasks),
+    }
+
 @router.post(
     "/driver-monitoring/process-video",
     summary="Upload and process video",
@@ -160,6 +174,7 @@ async def driver_monitoring(
         429: {"description": "Rate limit exceeded"},
         503: {"description": "Processing timeout exceeded"},
     },
+  response_model_exclude_none=True
 )
 async def process_video_upload(
     request: Request,
@@ -167,9 +182,11 @@ async def process_video_upload(
     object_detector: ObjectDetectorDep,
     video: UploadFile = File(...),
     target_fps: int = Query(15, ge=1, le=30),
+    group_interval_sec: int = Query(5, ge=1, le=60),
+    include_frames: bool = Query(False),
 ):
     """
-    Process an uploaded video file and return frame-by-frame metrics.
+    Process an uploaded video file and return grouped metrics.
     """
     client_host = request.client.host if request.client else "unknown"
     now = time.monotonic()
@@ -213,6 +230,8 @@ async def process_video_upload(
                         tmp_path,
                         target_fps=target_fps,
                         max_duration_sec=MAX_DURATION_SEC,
+                        group_interval_sec=group_interval_sec,
+                        include_frames=include_frames,
                         face_landmarker=face_landmarker,
                         object_detector=object_detector,
                     ),
@@ -235,7 +254,7 @@ async def process_video_upload(
                 detail="Invalid video format.",
             ) from exc
 
-        if not result.frames:
+        if not result.groups:
             raise HTTPException(
                 status_code=422,
                 detail="Video processing failed: no frames extracted.",
@@ -243,7 +262,8 @@ async def process_video_upload(
 
         return VideoProcessingResponse(
             video_metadata=result.metadata,
-            frames=result.frames,
+            groups=result.groups,
+            frames=result.frames if include_frames else None,
         )
 
     finally:
