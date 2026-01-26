@@ -95,14 +95,44 @@ async def process_video_frames(
     processed_frames = 0
     dropped_messages = 0
     start_time = time.perf_counter()
-    last_process_time = time.perf_counter()
+    last_process_time = 0.0
     metric_manager = MetricManager()
     smoother = SequenceSmoother(alpha=0.8, max_missing=5)
 
     data_channel_retries = 0
     MAX_DATA_CHANNEL_RETRIES = 10
+    # Keep only the most recent frame to avoid backlog-induced latency.
+    frame_queue: asyncio.Queue = asyncio.Queue(maxsize=1)
+    reader_task: asyncio.Task | None = None
+
+    async def _read_frames() -> None:
+        while True:
+            if stop_processing.is_set():
+                break
+            if client_id not in connection_manager.peer_connections:
+                break
+            try:
+                frame = await track.recv()
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                logger.exception("Frame receive failed for %s", client_id)
+                await asyncio.sleep(0)
+                continue
+
+            if frame_queue.full():
+                try:
+                    frame_queue.get_nowait()
+                except asyncio.QueueEmpty:
+                    pass
+
+            try:
+                frame_queue.put_nowait(frame)
+            except asyncio.QueueFull:
+                pass
 
     try:
+        reader_task = asyncio.create_task(_read_frames())
         while True:
             if stop_processing.is_set():
                 logger.info("Stop signal received for %s", client_id)
@@ -113,33 +143,21 @@ async def process_video_frames(
                 break
 
             try:
-                frame = await track.recv()
+                try:
+                    frame = await asyncio.wait_for(frame_queue.get(), timeout=0.5)
+                except asyncio.TimeoutError:
+                    continue
+
+                now = time.perf_counter()
+                if now - last_process_time < TARGET_INTERVAL_SEC:
+                    continue
+                last_process_time = now
+
                 if not frame:
                     logger.info("Frame is empty for %s", client_id)
                     break
 
                 frame_count += 1
-
-                # Schedule frame processing at a fixed interval to avoid drift.
-                # The next processing time is derived from the previous scheduled time,
-                # not the actual processing completion time.
-                next_process_time = last_process_time + TARGET_INTERVAL_SEC
-                sleep_duration = next_process_time - time.perf_counter()
-
-                if sleep_duration > 0:
-                    # Yield control until the scheduled processing time
-                    await asyncio.sleep(sleep_duration)
-                else:
-                    # Processing took longer than the target interval;
-                    # skip sleeping to prevent accumulating delay
-                    logger.debug(
-                        "Client %s: Processing is behind schedule by %.2f ms",
-                        client_id,
-                        -sleep_duration * 1000,
-                    )
-
-                # Advance schedule to maintain cadence
-                last_process_time = next_process_time
 
                 # Get data channel
                 channel = connection_manager.data_channels.get(client_id)
@@ -168,6 +186,8 @@ async def process_video_frames(
                             dropped_messages,
                         )
                     continue
+                if connection_manager.consume_head_pose_recalibration(client_id):
+                    metric_manager.reset_head_pose_baseline()
 
                 # Convert frame to numpy array
                 img = frame.to_ndarray(format="bgr24")
@@ -245,3 +265,9 @@ async def process_video_frames(
 
     finally:
         logger.info("Frame processing ended for %s", client_id)
+        if reader_task:
+            reader_task.cancel()
+            try:
+                await reader_task
+            except asyncio.CancelledError:
+                pass

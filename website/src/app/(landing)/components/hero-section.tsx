@@ -71,8 +71,8 @@ export function HeroSection() {
             <div className="relative rounded-xl border bg-card shadow-2xl">
               {/* Light mode dashboard image */}
               <Image
-                src="/dashboard-light.png"
-                alt="Dashboard Preview - Light Mode"
+                src="/preview-light.png"
+                alt="Preview - Light Mode"
                 width={1200}
                 height={800}
                 className="w-full rounded-xl object-cover block dark:hidden"
@@ -81,8 +81,8 @@ export function HeroSection() {
 
               {/* Dark mode dashboard image */}
               <Image
-                src="/dashboard-dark.png"
-                alt="Dashboard Preview - Dark Mode"
+                src="/preview-dark.png"
+                alt="Preview - Dark Mode"
                 width={1200}
                 height={800}
                 className="w-full rounded-xl object-cover hidden dark:block"

@@ -1,40 +1,47 @@
-import { useEffect, useState, useMemo } from 'react';
-import { ScrollView, TextInput, View, } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { ScrollView, TextInput, View } from 'react-native';
+import { Stack } from 'expo-router';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
-import { Stack } from 'expo-router';
 import { useSettings } from '../../../hooks/useSettings';
 import { validateApiBaseUrl, validateWsBaseUrl } from '@/lib/settings';
 
-export default function SettingsScreen() {
+export default function ApiUrlsScreen() {
   const { settings, isLoading, saveSettings } = useSettings();
-  const [apiBaseUrl, setApiBaseUrl] = useState(settings.apiBaseUrl);
-  const [wsBaseUrl, setWsBaseUrl] = useState(settings.wsBaseUrl);
-  const [errors, setErrors] = useState<{ apiBaseUrl?: string; wsBaseUrl?: string }>({});
+
+  const [apiBaseUrl, setApiBaseUrl] = useState('');
+  const [wsBaseUrl, setWsBaseUrl] = useState('');
+  const [errors, setErrors] = useState<{
+    apiBaseUrl?: string;
+    wsBaseUrl?: string;
+  }>({});
   const [statusMessage, setStatusMessage] = useState('');
 
+  // Sync local state when settings load or change
   useEffect(() => {
     setApiBaseUrl(settings.apiBaseUrl);
     setWsBaseUrl(settings.wsBaseUrl);
   }, [settings.apiBaseUrl, settings.wsBaseUrl]);
 
-  const hasChange = useMemo(() => {
-    // Trim them down and ensure its not the same or an invalid input
-    return apiBaseUrl.trim() !== settings.apiBaseUrl || wsBaseUrl.trim () !== settings.wsBaseUrl;
-  }, [apiBaseUrl, wsBaseUrl, settings.apiBaseUrl, settings.wsBaseUrl]);
+  // Clear status/errors when user edits
+  useEffect(() => {
+    setStatusMessage('');
+    setErrors({});
+  }, [apiBaseUrl, wsBaseUrl]);
 
-  const restartApp = async () => {
-    const trimmedApiBaseUrl = apiBaseUrl.trim();
-    const trimmedWsBaseUrl = wsBaseUrl.trim();
-  }
+  const hasChange = useMemo(() => {
+    return apiBaseUrl.trim() !== settings.apiBaseUrl || wsBaseUrl.trim() !== settings.wsBaseUrl;
+  }, [apiBaseUrl, wsBaseUrl, settings.apiBaseUrl, settings.wsBaseUrl]);
 
   const handleSave = async () => {
     const trimmedApiBaseUrl = apiBaseUrl.trim();
     const trimmedWsBaseUrl = wsBaseUrl.trim();
 
-    const nextErrors: { apiBaseUrl?: string; wsBaseUrl?: string } = {};
+    const nextErrors: {
+      apiBaseUrl?: string;
+      wsBaseUrl?: string;
+    } = {};
 
-    // --- GUARDS ---
     if (!validateApiBaseUrl(trimmedApiBaseUrl)) {
       nextErrors.apiBaseUrl = 'Enter a valid http(s) URL.';
     }
@@ -48,21 +55,18 @@ export default function SettingsScreen() {
       setStatusMessage('');
       return;
     }
-    // --------
 
     await saveSettings({
+      ...settings,
       apiBaseUrl: trimmedApiBaseUrl,
       wsBaseUrl: trimmedWsBaseUrl,
     });
-    setStatusMessage('API URLs saved. \nPlease Restart the App.');
+
+    setStatusMessage('API URLs saved. Please restart the app.');
   };
 
-  // if (changed) {
-  //   setRestartRequired(true);
-  // }
-
   return (
-       <ScrollView className="flex-1 px-4 py-4">
+    <ScrollView className="flex-1 px-4 py-4" keyboardShouldPersistTaps="handled">
       <Stack.Screen options={{ title: 'API' }} />
 
       <View className="mb-6">
@@ -70,11 +74,11 @@ export default function SettingsScreen() {
         <TextInput
           autoCapitalize="none"
           autoCorrect={false}
-          className="rounded-md border border-border bg-background px-3 py-2 text-base text-foreground"
           editable={!isLoading}
-          onChangeText={setApiBaseUrl}
+          className="rounded-md border border-border bg-background px-3 py-2 text-base text-foreground"
           placeholder="https://api.example.com"
           value={apiBaseUrl}
+          onChangeText={setApiBaseUrl}
         />
         {errors.apiBaseUrl ? (
           <Text className="mt-1 text-sm text-destructive">{errors.apiBaseUrl}</Text>
@@ -86,24 +90,22 @@ export default function SettingsScreen() {
         <TextInput
           autoCapitalize="none"
           autoCorrect={false}
-          className="rounded-md border border-border bg-background px-3 py-2 text-base text-foreground"
           editable={!isLoading}
-          onChangeText={setWsBaseUrl}
+          className="rounded-md border border-border bg-background px-3 py-2 text-base text-foreground"
           placeholder="wss://ws.example.com"
           value={wsBaseUrl}
+          onChangeText={setWsBaseUrl}
         />
         {errors.wsBaseUrl ? (
           <Text className="mt-1 text-sm text-destructive">{errors.wsBaseUrl}</Text>
         ) : null}
       </View>
 
-      <Button className="mb-3" disabled={isLoading} onPress={handleSave}>
+      <Button className="mb-3" disabled={isLoading || !hasChange} onPress={handleSave}>
         <Text>{isLoading ? 'Loading...' : 'Save API'}</Text>
       </Button>
 
-      {statusMessage ? (
-        <Text className="text-sm text-foreground">{statusMessage}</Text>
-      ) : null}
+      {statusMessage ? <Text className="text-sm text-foreground">{statusMessage}</Text> : null}
     </ScrollView>
   );
 }

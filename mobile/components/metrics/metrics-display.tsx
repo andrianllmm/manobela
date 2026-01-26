@@ -20,6 +20,7 @@ export const MetricsDisplay = ({ sessionState, metricsOutput }: MetricsDisplayPr
 
   // Stores whether the metrics display is disabled
   const isDisabled = sessionState !== 'active';
+  const eyeClosedSustained = metricsOutput?.eye_closure?.eye_closed_sustained ?? 0;
 
   /** Utility function to toggle the selected metric */
   const toggleMetric = useCallback((metricId: MetricId) => {
@@ -38,13 +39,14 @@ export const MetricsDisplay = ({ sessionState, metricsOutput }: MetricsDisplayPr
           const config = METRIC_DISPLAY_CONFIGS[metricId];
           // Get the metric data
           const metricData = metricsOutput?.[metricId];
+          const suppressGazeWarning = metricId === 'gaze' && eyeClosedSustained > 0;
 
           return (
             <MetricIndicator
               key={metricId}
               icon={config.icon}
               label={config.label}
-              isWarning={config.getWarningState(metricData)}
+              isWarning={suppressGazeWarning ? false : config.getWarningState(metricData)}
               fillRatio={config.getFillRatio?.(metricData)}
               isDisabled={isDisabled}
               isSelected={selectedMetric === metricId}

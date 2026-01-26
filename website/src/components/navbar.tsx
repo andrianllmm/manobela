@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Menu, Github, LayoutDashboard, X, Moon, Sun } from 'lucide-react';
+import { Menu, Github, LayoutDashboard, X, Moon, Sun, DownloadIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   NavigationMenu,
@@ -15,13 +15,19 @@ import { Logo } from '@/components/logo';
 import { ModeToggle } from '@/components/mode-toggle';
 import { useTheme } from '@/hooks/use-theme';
 
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
+
+const githubUrl =
+  process.env.EXPO_PUBLIC_GITHUB_BASE || 'https://github.com/popcorn-prophets/manobela';
+
 const navigationItems = [
-  { name: 'Home', href: '#hero' },
-  { name: 'Features', href: '#features' },
-  { name: 'Team', href: '#team' },
-  { name: 'Pricing', href: '#pricing' },
-  { name: 'FAQ', href: '#faq' },
-  { name: 'Contact', href: '#contact' },
+  { name: 'Home', href: '/#hero' },
+  { name: 'Features', href: '/#features' },
+  { name: 'Team', href: '/#team' },
+  { name: 'Pricing', href: '/#pricing' },
+  { name: 'FAQ', href: '/#faq' },
+  { name: 'Contact', href: '/#contact' },
+  { name: 'API', href: `${apiUrl}` },
 ];
 
 // Smooth scroll function
@@ -46,7 +52,7 @@ export function LandingNavbar() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
         {/* Logo */}
         <div className="flex items-center space-x-2">
-          <Link href="#" className="flex items-center space-x-2 cursor-pointer">
+          <Link href="/" className="flex items-center space-x-2 cursor-pointer">
             <Logo size={32} />
             <span className="font-bold">Manobela</span>
           </Link>
@@ -76,16 +82,24 @@ export function LandingNavbar() {
 
         {/* Desktop CTA */}
         <div className="hidden xl:flex items-center space-x-2">
-          <ModeToggle variant="ghost" />
+          <Button asChild size="sm">
+            <div className="flex gap-1">
+              <DownloadIcon size={14} />
+              <Link href="/download" className="text-sm">
+                Download
+              </Link>
+            </div>
+          </Button>
           <Button variant="ghost" size="icon" asChild className="cursor-pointer">
             <a
-              href="https://github.com/popcorn-prophets/manobela"
+              href={`${githubUrl}`}
               target="_blank"
               rel="noopener noreferrer"
               aria-label="GitHub Repository">
               <Github className="h-5 w-5" />
             </a>
           </Button>
+          <ModeToggle variant="ghost" />
         </div>
 
         {/* Mobile Menu */}
@@ -118,7 +132,7 @@ export function LandingNavbar() {
                     </Button>
                     <Button variant="ghost" size="icon" asChild className="cursor-pointer h-8 w-8">
                       <a
-                        href="https://github.com/popcorn-prophets/manobela"
+                        href={`${githubUrl}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="GitHub Repository">

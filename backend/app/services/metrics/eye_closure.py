@@ -12,8 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class EyeClosureMetricOutput(MetricOutputBase):
-    """Output schema for the eye closure metric.
-
+    """
     Attributes:
         ear: Eye Aspect Ratio (EAR) value for the current frame, if available.
         eye_closed: Whether the eyes are considered closed in the current frame.

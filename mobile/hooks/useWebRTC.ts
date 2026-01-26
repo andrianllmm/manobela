@@ -11,9 +11,9 @@ import { MediaStream, RTCPeerConnection } from 'react-native-webrtc';
 import { WebSocketTransport } from '@/services/signaling/web-socket-transport';
 import RTCDataChannel from 'react-native-webrtc/lib/typescript/RTCDataChannel';
 import { fetchIceServers } from '@/services/ice-servers';
+import { useSettings } from './useSettings';
 import { mapNetworkErrorMessage } from '@/services/network-error';
 import NetInfo from '@react-native-community/netinfo';
-import { BackHandler, Platform } from 'react-native';
 
 interface UseWebRTCProps {
   // WebSocket signaling endpoint
@@ -26,9 +26,12 @@ interface UseWebRTCProps {
   rtcConfig?: RTCConfiguration;
 }
 
+export type DataChannelState = 'connecting' | 'open' | 'closing' | 'closed';
+
 interface UseWebRTCReturn {
   transportStatus: TransportStatus;
   connectionStatus: RTCPeerConnectionState;
+  dataChannelState: DataChannelState;
   clientId: string | null;
   error: string | null;
   errorDetails: string | null; // implement in return
@@ -50,6 +53,8 @@ interface UseWebRTCReturn {
  * Manages WebRTC peer connection, signaling, and data channel lifecycle.
  */
 export const useWebRTC = ({ url, stream }: UseWebRTCProps): UseWebRTCReturn => {
+  const { settings } = useSettings();
+
   // Assigned by signaling server on WELCOME
   const [clientId, setClientId] = useState<string | null>(null);
 
@@ -60,13 +65,16 @@ export const useWebRTC = ({ url, stream }: UseWebRTCProps): UseWebRTCReturn => {
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const transportRef = useRef<SignalingTransport | null>(null);
   const dataChannelRef = useRef<RTCDataChannel | null>(null);
+  const [dataChannelState, setDataChannelState] = useState<DataChannelState>('closed');
 
   // Fan-out handler registries
   const signalingHandlers = useRef<((msg: SignalingMessage) => void)[]>([]);
   const dataChannelHandlers = useRef<((msg: any) => void)[]>([]);
+
   const wasOfflineRef = useRef(false);
   const [isOffline, setIsOffline] = useState(false);
   const isOfflineRef = useRef(false);
+
   // Last fatal error encountered anywhere in the stack
   const [error, setError] = useState<string | null>(null);
 
@@ -207,10 +215,12 @@ export const useWebRTC = ({ url, stream }: UseWebRTCProps): UseWebRTCReturn => {
     (pc: RTCPeerConnection) => {
       const channel = pc.createDataChannel('data', { ordered: true });
       dataChannelRef.current = channel;
+      setDataChannelState(channel.readyState as DataChannelState);
 
       // @ts-ignore
       channel.onopen = () => {
         console.log('Data channel opened');
+        setDataChannelState('open');
         // maybe send initial handshake or keepalive
       };
 
@@ -223,11 +233,13 @@ export const useWebRTC = ({ url, stream }: UseWebRTCProps): UseWebRTCReturn => {
       // @ts-ignore
       channel.onclose = () => {
         console.log('Data channel closed');
+        setDataChannelState('closed');
       };
 
       // @ts-ignore
       channel.onerror = (err) => {
         console.error('Data channel error:', err);
+        setDataChannelState(channel.readyState as DataChannelState);
       };
 
       return channel;
@@ -288,6 +300,32 @@ export const useWebRTC = ({ url, stream }: UseWebRTCProps): UseWebRTCReturn => {
     [sendSignalingMessage]
   );
 
+  const replaceOutgoingTracks = useCallback((nextStream: MediaStream | null) => {
+    const pc = pcRef.current;
+    if (!pc) return;
+    if (!nextStream) return;
+
+    const senders = pc.getSenders();
+
+    nextStream.getTracks().forEach((track) => {
+      const sender = senders.find((s) => s.track?.kind === track.kind);
+      if (sender) {
+        try {
+          sender.replaceTrack(track);
+        } catch (err) {
+          console.warn('Failed to replace sender track', err);
+        }
+        return;
+      }
+      pc.addTrack(track, nextStream);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!pcRef.current) return;
+    replaceOutgoingTracks(stream);
+  }, [stream, replaceOutgoingTracks]);
+
   /**
    * Main entry point.
    * Starts full WebRTC negotiation.
@@ -321,7 +359,7 @@ export const useWebRTC = ({ url, stream }: UseWebRTCProps): UseWebRTCReturn => {
       }
 
       const rtcConfig: RTCConfiguration = {
-        ...(await fetchIceServers()),
+        ...(await fetchIceServers({ apiBaseUrl: settings.apiBaseUrl })),
       };
 
       // Create peer connection
@@ -395,6 +433,7 @@ export const useWebRTC = ({ url, stream }: UseWebRTCProps): UseWebRTCReturn => {
     setConnectionStatus('closed');
     setClientId(null);
     setErrorState('');
+    setDataChannelState('closed');
   }, [setErrorState]);
 
   const transportStatus: TransportStatus = transportRef.current?.status ?? 'closed';
@@ -435,6 +474,7 @@ export const useWebRTC = ({ url, stream }: UseWebRTCProps): UseWebRTCReturn => {
   return {
     transportStatus,
     connectionStatus,
+    dataChannelState,
     clientId,
     error,
     errorDetails,

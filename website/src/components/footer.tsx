@@ -10,6 +10,11 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from '@/component
 import { Logo } from '@/components/logo';
 import { Github, Twitter, Linkedin, Youtube, Heart } from 'lucide-react';
 
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
+
+const githubUrl =
+  process.env.EXPO_PUBLIC_GITHUB_BASE || 'https://github.com/popcorn-prophets/manobela';
+
 const newsletterSchema = z.object({
   email: z.string().email({
     message: 'Please enter a valid email address.',
@@ -18,28 +23,20 @@ const newsletterSchema = z.object({
 
 const footerLinks = {
   product: [
-    { name: 'Features', href: '#features' },
-    { name: 'Pricing', href: '#pricing' },
-    { name: 'API', href: '#api' },
-    { name: 'Documentation', href: '#docs' },
+    { name: 'Pricing', href: '/#pricing' },
+    { name: 'API', href: `${apiUrl}` },
   ],
   company: [
-    { name: 'About', href: '#about' },
-    { name: 'Blog', href: '#blog' },
-    { name: 'Careers', href: '#careers' },
-    { name: 'Press', href: '#press' },
+    { name: 'About', href: '/#about' },
+    { name: 'Features', href: '/#features' },
   ],
   resources: [
-    { name: 'Help Center', href: '#help' },
-    { name: 'Community', href: '#community' },
-    { name: 'Guides', href: '#guides' },
-    { name: 'Webinars', href: '#webinars' },
+    { name: 'Help', href: '/#faq' },
+    { name: 'Contact', href: '/#contact' },
   ],
   legal: [
-    { name: 'Privacy', href: '#privacy' },
-    { name: 'Terms', href: '#terms' },
-    { name: 'Security', href: '#security' },
-    { name: 'Status', href: '#status' },
+    { name: 'Privacy', href: '/privacy' },
+    { name: 'Terms', href: '/terms' },
   ],
 };
 
@@ -47,7 +44,7 @@ const socialLinks = [
   { name: 'Twitter', href: '#', icon: Twitter },
   {
     name: 'GitHub',
-    href: 'https://github.com/popcorn-prophets/manobela',
+    href: `${githubUrl}`,
 
     icon: Github,
   },
@@ -212,14 +209,6 @@ export function LandingFooter() {
             </div>
             <span className="hidden sm:inline">•</span>
             <span>© {new Date().getFullYear()}</span>
-          </div>
-          <div className="flex items-center space-x-4 text-sm text-muted-foreground mt-4 md:mt-0">
-            <a href="#privacy" className="hover:text-foreground transition-colors">
-              Privacy Policy
-            </a>
-            <a href="#terms" className="hover:text-foreground transition-colors">
-              Terms of Service
-            </a>
           </div>
         </div>
       </div>

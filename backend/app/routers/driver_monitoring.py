@@ -4,19 +4,28 @@ import logging
 import tempfile
 import time
 import uuid
-from pathlib import Path
 from datetime import datetime, timezone
+from pathlib import Path
 
-from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile, WebSocket
-from fastapi import WebSocketDisconnect
+from fastapi import (
+    APIRouter,
+    File,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+    WebSocket,
+    WebSocketDisconnect,
+)
+from pydantic import BaseModel, Field
 
 from app.core.dependencies import (
     ConnectionManagerDep,
     ConnectionManagerWsDep,
-    FaceLandmarkerDepWs,
     FaceLandmarkerDep,
+    FaceLandmarkerDepWs,
+    ObjectDetectorDep,
     ObjectDetectorDepWs,
-    ObjectDetectorDep
 )
 from app.models.video_upload import VideoProcessingResponse
 from app.models.webrtc import MessageType
@@ -37,6 +46,33 @@ PROCESSING_TIMEOUT_SEC = 5 * 60
 RATE_LIMIT_WINDOW_SEC = 60
 ALLOWED_VIDEO_EXTENSIONS = {".mp4", ".mov"}
 _last_upload_by_ip: dict[str, float] = {}
+
+class ConnectionsResponse(BaseModel):
+    active_connections: int = Field(..., description="Number of active WebSocket connections")
+    peer_connections: int = Field(..., description="Number of active RTCPeerConnections")
+    data_channels: int = Field(..., description="Number of active WebRTC DataChannels")
+    frame_tasks: int = Field(..., description="Number of active frame-processing tasks")
+
+
+@router.get(
+    "/connections",
+    summary="Get active WebRTC connections",
+    description="Returns metrics about active WebRTC sessions and internal resource usage.",
+    response_model=ConnectionsResponse,
+)
+async def connections(
+    connection_manager: ConnectionManagerDep,
+):
+    """
+    Returns an overview of active driver monitoring sessions and resources.
+    """
+
+    return {
+        "active_connections": len(connection_manager.active_connections),
+        "peer_connections": len(connection_manager.peer_connections),
+        "data_channels": len(connection_manager.data_channels),
+        "frame_tasks": len(connection_manager.frame_tasks),
+    }
 
 
 @router.websocket("/ws/driver-monitoring")
@@ -123,7 +159,23 @@ async def connections(
         "frame_tasks": len(connection_manager.frame_tasks),
     }
 
-@router.post("/driver-monitoring/process-video", response_model=VideoProcessingResponse, response_model_exclude_none=True)
+@router.post(
+    "/driver-monitoring/process-video",
+    summary="Upload and process video",
+    description=(
+        "Upload a video file (MP4/MOV). "
+        "The server processes it frame-by-frame and returns driver monitoring metrics."
+    ),
+    response_model=VideoProcessingResponse,
+    responses={
+        400: {"description": "Invalid video format or extension"},
+        413: {"description": "File exceeds size or duration limits"},
+        422: {"description": "Video processing failed (no frames extracted)"},
+        429: {"description": "Rate limit exceeded"},
+        503: {"description": "Processing timeout exceeded"},
+    },
+  response_model_exclude_none=True
+)
 async def process_video_upload(
     request: Request,
     face_landmarker: FaceLandmarkerDep,

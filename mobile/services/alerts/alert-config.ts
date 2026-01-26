@@ -67,7 +67,13 @@ export const ALERT_CONFIGS: AlertConfig[] = [
     message: 'Keep your eyes on the road.',
     priority: AlertPriority.MEDIUM,
     cooldownMs: 15000,
-    condition: (m: MetricsOutput) => !!getMetric(m, 'gaze')?.gaze_alert,
+    condition: (m: MetricsOutput) => {
+      const eyeClosure = getMetric(m, 'eye_closure');
+      if (eyeClosure?.eye_closed_sustained) {
+        return false;
+      }
+      return !!getMetric(m, 'gaze')?.gaze_alert;
+    },
   },
   {
     id: 'phone_usage',

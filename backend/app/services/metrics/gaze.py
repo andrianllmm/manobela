@@ -2,7 +2,9 @@ import logging
 
 from app.core.config import settings
 from app.services.metrics.base_metric import BaseMetric, MetricOutputBase
+from app.services.metrics.eye_closure import EyeClosureMetric
 from app.services.metrics.frame_context import FrameContext
+from app.services.metrics.utils.ear import average_ear
 from app.services.metrics.utils.eye_gaze_ratio import (
     left_eye_gaze_ratio,
     right_eye_gaze_ratio,
@@ -15,8 +17,6 @@ logger = logging.getLogger(__name__)
 
 class GazeMetricOutput(MetricOutputBase):
     """
-    Output schema for the gaze metric.
-
     Attributes:
         gaze_alert: Whether gaze has been outside the configured range for at least min_sustained_sec.
         gaze_sustained: Fraction of time the gaze has been continuous.
@@ -34,6 +34,10 @@ class GazeMetric(BaseMetric):
     DEFAULT_VERTICAL_RANGE = (0.35, 0.65)
     DEFAULT_MIN_SUSTAINED_SEC = 0.5
     DEFAULT_SMOOTHER_ALPHA = 0.4
+    DEFAULT_EYE_CLOSED_EAR_THRESHOLD = (
+        EyeClosureMetric.DEFAULT_EAR_THRESHOLD
+        * EyeClosureMetric.DEFAULT_EAR_HYSTERESIS_RATIO
+    )
 
     def __init__(
         self,
@@ -41,6 +45,7 @@ class GazeMetric(BaseMetric):
         vertical_range: tuple[float, float] = DEFAULT_VERTICAL_RANGE,
         min_sustained_sec: float = DEFAULT_MIN_SUSTAINED_SEC,
         smoother_alpha: float = DEFAULT_SMOOTHER_ALPHA,
+        eye_closed_ear_threshold: float = DEFAULT_EYE_CLOSED_EAR_THRESHOLD,
     ) -> None:
         """
         Args:
@@ -48,6 +53,7 @@ class GazeMetric(BaseMetric):
             vertical_range: Range of vertical gaze deviation (0-1, 0-1).
             min_sustained_sec: Minimum duration in seconds to count as gaze (0-inf).
             smoother_alpha: Smoother alpha for gaze smoothing (0-1).
+            eye_closed_ear_threshold: EAR threshold below which gaze alerts are suppressed (0-1).
         """
 
         # Validate inputs
@@ -61,9 +67,12 @@ class GazeMetric(BaseMetric):
             raise ValueError("vertical_range[1] must be between (0, 1).")
         if min_sustained_sec <= 0:
             raise ValueError("min_sustained_sec must be positive.")
+        if eye_closed_ear_threshold < 0 or eye_closed_ear_threshold > 1:
+            raise ValueError("eye_closed_ear_threshold must be between (0, 1).")
 
         self.horizontal_range = horizontal_range
         self.vertical_range = vertical_range
+        self.eye_closed_ear_threshold = eye_closed_ear_threshold
 
         fps = getattr(settings, "target_fps", 15)
         self.min_sustained_frames = max(1, int(min_sustained_sec * fps))
@@ -77,6 +86,10 @@ class GazeMetric(BaseMetric):
     def update(self, context: FrameContext) -> GazeMetricOutput:
         landmarks = context.face_landmarks
         if not landmarks:
+            return self._build_output()
+
+        if self._eyes_closed(landmarks):
+            self._reset_alert_state()
             return self._build_output()
 
         try:
@@ -99,7 +112,8 @@ class GazeMetric(BaseMetric):
             return self._build_output()
 
         if left_ratio is None and right_ratio is None:
-            gaze_on_road = False
+            self._reset_alert_state()
+            return self._build_output()
         else:
             left_on_h = in_range(
                 left_ratio[0] if left_ratio else None, self.horizontal_range
@@ -136,8 +150,7 @@ class GazeMetric(BaseMetric):
         return self._build_output()
 
     def reset(self) -> None:
-        self._sustained_out_of_range_frames = 0
-        self._gaze_alert_state = False
+        self._reset_alert_state()
         self.left_smoother.reset()
         self.right_smoother.reset()
 
@@ -146,6 +159,14 @@ class GazeMetric(BaseMetric):
             "gaze_alert": self._gaze_alert_state,
             "gaze_sustained": self._calc_sustained(),
         }
+
+    def _eyes_closed(self, landmarks) -> bool:
+        ear_value = average_ear(landmarks)
+        return ear_value <= self.eye_closed_ear_threshold
+
+    def _reset_alert_state(self) -> None:
+        self._sustained_out_of_range_frames = 0
+        self._gaze_alert_state = False
 
     def _calc_sustained(self) -> float:
         return min(self._sustained_out_of_range_frames / self.min_sustained_frames, 1.0)
