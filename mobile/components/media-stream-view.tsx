@@ -19,6 +19,7 @@ type MediaStreamViewProps = {
   mirror?: boolean;
   hasCamera: boolean;
   onToggle: () => void;
+  onRecalibrateHeadPose?: () => void;
 };
 
 /**
@@ -33,6 +34,7 @@ export const MediaStreamView = ({
   mirror = true,
   hasCamera,
   onToggle,
+  onRecalibrateHeadPose,
 }: MediaStreamViewProps) => {
   const [viewDimensions, setViewDimensions] = useState({ width: 0, height: 0 });
   const [showOverlay, setShowOverlay] = useState(true);
@@ -57,6 +59,7 @@ export const MediaStreamView = ({
   const showLandmarks = showOverlays && landmarks != null;
   const showDetections = showOverlays && objectDetections != null;
   const formattedDuration = formatDuration(sessionDurationMs);
+  const canRecalibrate = sessionState === 'active' && Boolean(onRecalibrateHeadPose);
 
   return (
     <View
@@ -105,6 +108,18 @@ export const MediaStreamView = ({
           onPress={onToggle}
         />
       </View>
+
+      {canRecalibrate && (
+        <Pressable
+          onPress={onRecalibrateHeadPose}
+          accessibilityRole="button"
+          accessibilityLabel="Recalibrate head pose"
+          style={styles.recalibrateButton}>
+          <View style={styles.recalibrateRing}>
+            <ScanFace size={22} color="white" />
+          </View>
+        </Pressable>
+      )}
 
       {/* Top overlay */}
       <View className="absolute left-0 right-0 top-3 z-10 flex-row items-center justify-between px-3">
@@ -169,3 +184,25 @@ const formatDuration = (durationMs: number) => {
 
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 };
+
+const styles = StyleSheet.create({
+  recalibrateButton: {
+    position: 'absolute',
+    bottom: 12,
+    left: 12,
+    width: 70,
+    height: 70,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  recalibrateRing: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 2,
+    borderColor: 'white',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+  },
+});

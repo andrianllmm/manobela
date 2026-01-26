@@ -9,8 +9,6 @@ import { MediaStreamView } from '@/components/media-stream-view';
 import { ConnectionStatus } from '@/components/connection-status';
 import { Stack } from 'expo-router';
 import { MetricsDisplay } from '@/components/metrics/metrics-display';
-import { Button } from '@/components/ui/button';
-import { Text } from '@/components/ui/text';
 
 import { useSettings } from '@/hooks/useSettings';
 
@@ -89,16 +87,6 @@ export default function MonitorScreen() {
 
       <ConnectionStatus sessionState={sessionState} clientId={clientId} error={error} />
 
-      <View className="mb-3 items-start">
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={sessionState !== 'active'}
-          onPress={recalibrateHeadPose}>
-          <Text>Recalibrate Head Pose</Text>
-        </Button>
-      </View>
-
       <View className="mb-4 w-full">
         <MediaStreamView
           stream={localStream}
@@ -107,6 +95,7 @@ export default function MonitorScreen() {
           inferenceData={inferenceData}
           hasCamera={hasCamera}
           onToggle={handleToggle}
+          onRecalibrateHeadPose={recalibrateHeadPose}
           style={{
             width: '100%',
             aspectRatio,
