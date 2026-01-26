@@ -147,7 +147,7 @@ export const MediaStreamView = ({
       </View>
 
       {sessionState === 'active' && isCalibrating && (
-        <View className="absolute left-0 right-0 top-14 items-center">
+        <View className="absolute left-0 right-0 bottom-14 items-center">
           <View className="rounded-full bg-black/60 px-3 py-1">
             <Text className="text-xs text-white">Calibrating head pose...</Text>
           </View>
