@@ -70,3 +70,9 @@ class MetricManager:
         """Reset all metrics."""
         for metric in self.metrics.values():
             metric.reset()
+
+    def reset_head_pose_baseline(self) -> None:
+        """Reset head pose baseline calibration without touching other metrics."""
+        metric = self.metrics.get("head_pose")
+        if isinstance(metric, HeadPoseMetric):
+            metric.reset_baseline()

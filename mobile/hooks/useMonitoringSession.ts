@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useWebRTC } from './useWebRTC';
+import { DataChannelState, useWebRTC } from './useWebRTC';
 import { MediaStream } from 'react-native-webrtc';
 import { sessionLogger } from '@/services/logging/session-logger';
 import { InferenceData } from '@/types/inference';
@@ -23,11 +23,13 @@ interface UseMonitoringSessionReturn {
   sessionDurationMs: number;
   transportStatus: string;
   connectionStatus: string;
+  dataChannelState: DataChannelState;
   error: string | null;
   hasCamera: boolean;
   errorDetails: string | null;
   start: () => Promise<void>;
   stop: () => Promise<void>;
+  recalibrateHeadPose: () => void;
 }
 
 /**
@@ -45,7 +47,9 @@ export const useMonitoringSession = ({
     cleanup,
     transportStatus,
     connectionStatus,
+    dataChannelState,
     onDataMessage,
+    sendDataMessage,
     error,
     errorDetails,
   } = useWebRTC({ url, stream });
@@ -166,11 +170,20 @@ export const useMonitoringSession = ({
     latestInferenceRef.current = null;
   }, [sessionState, cleanup]);
 
+  const recalibrateHeadPose = useCallback(() => {
+    if (dataChannelState === 'open') {
+      sendDataMessage({ type: 'head_pose_recalibrate' });
+    } else {
+      console.warn('Data channel not open for recalibration');
+    }
+  }, [sendDataMessage, dataChannelState]);
+
   return {
     sessionState,
     clientId,
     transportStatus,
     connectionStatus,
+    dataChannelState,
     hasCamera: stream !== null,
     inferenceData,
     sessionDurationMs,
@@ -178,5 +191,6 @@ export const useMonitoringSession = ({
     errorDetails,
     start,
     stop,
+    recalibrateHeadPose,
   };
 };
