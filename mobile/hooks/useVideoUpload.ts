@@ -121,9 +121,18 @@ export const useVideoUpload = (apiBaseUrl: string): UseVideoUploadResult => {
 
           // Log the uploaded video to the database for insights
           if (selectedVideo) {
-            sessionLogger.logUploadedVideo(parsed, selectedVideo.name).catch((err) => {
-              console.error('Failed to log uploaded video session:', err);
-            });
+            sessionLogger
+              .logUploadedVideo(parsed, selectedVideo.name)
+              .then(() => {
+                console.log('Successfully logged uploaded video to insights');
+              })
+              .catch((err) => {
+                console.error('Failed to log uploaded video session:', err);
+                Alert.alert(
+                  'Warning',
+                  'Video processed successfully but could not be saved to insights. You can still view the results above.'
+                );
+              });
           }
         } catch {
           setError('Upload succeeded but response could not be parsed.');
