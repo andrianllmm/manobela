@@ -9,6 +9,7 @@ import { useLocationPermission } from '@/hooks/maps/useLocationPermission';
 import { RouteControls } from '@/components/maps/route-control';
 import { RouteInfo } from '@/components/maps/route-info';
 import { LocationSearchBoxes } from '@/components/maps/location-search-boxes';
+import { ZoomControls } from '@/components/maps/zoom-controls';
 
 const FALLBACK_INITIAL_CENTER = { latitude: 40.7128, longitude: -74.006 };
 const INITIAL_ZOOM = 20;
@@ -249,6 +250,15 @@ export default function MapsScreen() {
     }
   }, [error]);
 
+  // Zoom control handlers
+  const handleZoomIn = useCallback(() => {
+    mapRef.current?.zoomIn();
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    mapRef.current?.zoomOut();
+  }, []);
+
   return (
     <View className="flex-1">
       <Stack.Screen options={{ title: 'Maps' }} />
@@ -279,6 +289,8 @@ export default function MapsScreen() {
             : 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'
         }
       />
+
+      <ZoomControls onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} />
 
       <RouteControls
         onUseCurrentLocation={handleUseCurrentLocation}
