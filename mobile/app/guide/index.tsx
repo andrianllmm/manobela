@@ -7,7 +7,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Text } from '@/components/ui/text';
-import { GUIDE_SECTIONS } from './guide-content';
+import { GUIDE_SECTIONS } from '@/constants/guide-content';
 
 export default function GuideScreen() {
   return (
