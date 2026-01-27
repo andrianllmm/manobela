@@ -1,6 +1,7 @@
 import { View, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Navigation, X } from 'lucide-react-native';
 import { useTheme } from '@react-navigation/native';
+import { cn } from '@/lib/utils';
 
 interface RouteControlsProps {
   onUseCurrentLocation: () => void;
@@ -9,6 +10,7 @@ interface RouteControlsProps {
   isCalculating: boolean;
   hasCurrentLocation: boolean;
   isGettingUserLocation: boolean;
+  className?: string;
 }
 
 export function RouteControls({
@@ -18,10 +20,11 @@ export function RouteControls({
   isCalculating,
   hasCurrentLocation,
   isGettingUserLocation,
+  className,
 }: RouteControlsProps) {
   const { colors } = useTheme();
   return (
-    <View className="absolute bottom-24 right-4 flex-col gap-3">
+    <View className={cn('flex-col gap-3', className)}>
       {/* Use Current Location Button */}
       {!hasCurrentLocation && (
         <TouchableOpacity

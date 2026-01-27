@@ -1,17 +1,19 @@
 import { View, TouchableOpacity } from 'react-native';
 import { Plus, Minus } from 'lucide-react-native';
 import { useTheme } from '@react-navigation/native';
+import { cn } from '@/lib/utils';
 
 interface ZoomControlsProps {
   onZoomIn: () => void;
   onZoomOut: () => void;
+  className?: string;
 }
 
-export function ZoomControls({ onZoomIn, onZoomOut }: ZoomControlsProps) {
+export function ZoomControls({ onZoomIn, onZoomOut, className }: ZoomControlsProps) {
   const { colors } = useTheme();
 
   return (
-    <View className="absolute bottom-24 left-4 flex-col gap-2">
+    <View className={cn('flex-col gap-2', className)}>
       {/* Zoom In Button */}
       <TouchableOpacity
         onPress={onZoomIn}

@@ -23,7 +23,7 @@ export default function MapsScreen() {
 
   const mapRef = useRef<OSMViewRef>(null);
   const bottomSheetRef = useRef<BottomSheet>(null);
-  const bottomSheetSnapPoints = useMemo(() => ['20%', '50%', '75%'], []);
+  const bottomSheetSnapPoints = useMemo(() => ['15%', '45%', '75%'], []);
 
   // Initial map setup
   const {
@@ -109,6 +109,7 @@ export default function MapsScreen() {
         onDestinationLocationSelected={handleDestinationLocationSelected}
         onUseCurrentLocation={handleUseCurrentLocation}
         isGettingUserLocation={isGettingUserLocation}
+        className="absolute left-4 right-4 top-4"
       />
 
       <OSMView
@@ -132,6 +133,7 @@ export default function MapsScreen() {
       <ZoomControls
         onZoomIn={mapRef.current?.zoomIn || (() => {})}
         onZoomOut={mapRef.current?.zoomOut || (() => {})}
+        className="absolute bottom-32 left-4"
       />
 
       <RouteControls
@@ -141,6 +143,7 @@ export default function MapsScreen() {
         isCalculating={isCalculating}
         hasCurrentLocation={!!startLocation}
         isGettingUserLocation={isGettingUserLocation}
+        className="absolute bottom-32 right-4"
       />
 
       <BottomSheet

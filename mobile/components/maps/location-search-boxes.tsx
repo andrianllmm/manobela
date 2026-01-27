@@ -2,6 +2,7 @@ import { View, TouchableOpacity } from 'react-native';
 import { SearchBox } from '@/components/maps/search-box';
 import { Navigation, MapPin, LocateFixed } from 'lucide-react-native';
 import { useTheme } from '@react-navigation/native';
+import { cn } from '@/lib/utils';
 
 interface LocationSearchBoxesProps {
   startLocation: {
@@ -26,6 +27,7 @@ interface LocationSearchBoxesProps {
   ) => void;
   onUseCurrentLocation: () => void;
   isGettingUserLocation: boolean;
+  className?: string;
 }
 
 export function LocationSearchBoxes({
@@ -35,11 +37,12 @@ export function LocationSearchBoxes({
   onDestinationLocationSelected,
   onUseCurrentLocation,
   isGettingUserLocation,
+  className,
 }: LocationSearchBoxesProps) {
   const { colors } = useTheme();
 
   return (
-    <View className="absolute left-4 right-4 top-4 z-10">
+    <View className={cn('z-10', className)}>
       <View className="overflow-hidden rounded-lg bg-background shadow-lg">
         {/* Start */}
         <View className="flex-row items-center border-b border-border bg-background">
