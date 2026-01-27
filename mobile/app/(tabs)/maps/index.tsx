@@ -175,7 +175,6 @@ export default function MapsScreen() {
         onZoomOut={mapRef.current?.zoomOut || (() => {})}
         hasRoute={!!route}
         isCalculating={isCalculating}
-        hasCurrentLocation={!!startLocation}
         isGettingUserLocation={isGettingUserLocation}
         isNavigating={navigationState.isNavigating}
         className="absolute bottom-32 right-4"

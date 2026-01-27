@@ -151,7 +151,7 @@ export const SearchBox: React.FC<
   );
 
   useEffect(() => {
-    if (value !== undefined) setQuery(value);
+    setQuery(value ?? '');
   }, [value]);
 
   useEffect(() => {

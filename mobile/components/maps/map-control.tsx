@@ -13,7 +13,6 @@ interface RouteControlsProps {
   onZoomOut: () => void;
   hasRoute: boolean;
   isCalculating: boolean;
-  hasCurrentLocation: boolean;
   isGettingUserLocation: boolean;
   isNavigating: boolean;
   className?: string;
@@ -28,7 +27,6 @@ export function RouteControls({
   onZoomOut,
   hasRoute,
   isCalculating,
-  hasCurrentLocation,
   isGettingUserLocation,
   isNavigating,
   className,

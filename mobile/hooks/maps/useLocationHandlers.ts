@@ -123,13 +123,16 @@ export const useLocationHandlers = ({
         initialZoom
       );
 
+      if (destinationLocation && mapRef.current) {
+        await calculateRoute(location.coordinate, destinationLocation.coordinate, mapRef);
+      }
       setIsGettingUserLocation(false);
     } catch (err: any) {
       console.error('Error getting current location:', err);
       Alert.alert('Error', err.message || 'Failed to get current location');
       setIsGettingUserLocation(false);
     }
-  }, [getLocation, setStartLocation, mapRef, initialZoom]);
+  }, [getLocation, setStartLocation, mapRef, initialZoom, destinationLocation, calculateRoute]);
 
   return {
     isGettingUserLocation,

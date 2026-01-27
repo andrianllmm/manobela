@@ -1,30 +1,15 @@
 import { View, TouchableOpacity } from 'react-native';
-import { SearchBox } from '@/components/maps/search-box';
-import { MapPin, LocateFixed, Target } from 'lucide-react-native';
 import { useTheme } from '@react-navigation/native';
+import { SearchBox } from '@/components/maps/search-box';
+import { MapLocation } from '@/types/maps';
 import { cn } from '@/lib/utils';
+import { MapPin, LocateFixed, Target } from 'lucide-react-native';
 
 interface LocationSearchBoxesProps {
-  startLocation: {
-    coordinate: { latitude: number; longitude: number };
-    displayName?: string;
-  } | null;
-  destinationLocation: {
-    coordinate: { latitude: number; longitude: number };
-    displayName?: string;
-  } | null;
-  onStartLocationSelected: (
-    location: {
-      coordinate: { latitude: number; longitude: number };
-      displayName?: string;
-    } | null
-  ) => void;
-  onDestinationLocationSelected: (
-    location: {
-      coordinate: { latitude: number; longitude: number };
-      displayName?: string;
-    } | null
-  ) => void;
+  startLocation: MapLocation | null;
+  destinationLocation: MapLocation | null;
+  onStartLocationSelected: (location: MapLocation | null) => void;
+  onDestinationLocationSelected: (location: MapLocation | null) => void;
   onUseCurrentLocation: () => void;
   isGettingUserLocation: boolean;
   className?: string;
