@@ -1,5 +1,5 @@
 import { useRef, useMemo, useCallback, useEffect } from 'react';
-import { View, Alert, useColorScheme } from 'react-native';
+import { View, Alert } from 'react-native';
 import { Stack } from 'expo-router';
 import { OSMView, type OSMViewRef } from 'expo-osm-sdk';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
@@ -13,12 +13,13 @@ import { RouteControls } from '@/components/maps/map-control';
 import { RouteInfo } from '@/components/maps/route-info';
 import { LocationSearchBoxes } from '@/components/maps/location-search-boxes';
 import { useLocation } from '@/hooks/maps/useLocation';
+import { useColorScheme } from 'nativewind';
 
 const FALLBACK_INITIAL_CENTER = { latitude: 40.7128, longitude: -74.006 };
 const INITIAL_ZOOM = 20;
 
 export default function MapsScreen() {
-  const colorScheme = useColorScheme();
+  const { colorScheme } = useColorScheme();
   const { colors } = useTheme();
 
   const mapRef = useRef<OSMViewRef>(null);
