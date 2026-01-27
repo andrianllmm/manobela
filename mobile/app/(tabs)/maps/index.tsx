@@ -1,5 +1,5 @@
 import { useRef, useState, useMemo, useCallback, useEffect } from 'react';
-import { View, Alert } from 'react-native';
+import { View, Alert, useColorScheme } from 'react-native';
 import { Stack } from 'expo-router';
 import { OSMView, type OSMViewRef } from 'expo-osm-sdk';
 import * as Location from 'expo-location';
@@ -14,6 +14,7 @@ const FALLBACK_INITIAL_CENTER = { latitude: 40.7128, longitude: -74.006 };
 const INITIAL_ZOOM = 20;
 
 export default function MapsScreen() {
+  const colorScheme = useColorScheme();
   const mapRef = useRef<OSMViewRef>(null);
   const [startLocation, setStartLocation] = useState<MapLocation | null>(null);
   const [destinationLocation, setDestinationLocation] = useState<MapLocation | null>(null);
@@ -272,6 +273,11 @@ export default function MapsScreen() {
         onMarkerPress={(id) => {
           console.log('Marker pressed:', id);
         }}
+        styleUrl={
+          colorScheme === 'dark'
+            ? 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
+            : 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'
+        }
       />
 
       <RouteControls
