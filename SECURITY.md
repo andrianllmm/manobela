@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-Versions of currently being supported with security updates.
+Versions currently being supported with security updates.
 
 | Version | Supported          |
 | ------- | ------------------ |
@@ -13,8 +13,7 @@ Versions of currently being supported with security updates.
 If you discover a security vulnerability, please report it to us privately.
 
 ### How to Report
-- Email: **popcornprophets@outlook.com**  
-  *(or create a GitHub issue labeled “security” if you prefer, but private email is recommended)*  
+- Email: **popcornprophets@outlook.com**
 - Subject line: **Security Vulnerability Report**
 - Include:
   - A clear description of the issue
