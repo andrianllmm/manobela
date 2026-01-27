@@ -4,11 +4,11 @@ import { Stack } from 'expo-router';
 import { OSMView, type OSMViewRef } from 'expo-osm-sdk';
 import * as Location from 'expo-location';
 import { MapLocation } from '@/types/maps';
-import { useRouteCalculation } from '../../../hooks/maps/useRouteCalculation';
-import { useLocationPermission } from '../../../hooks/maps/useLocationPermission';
-import { RouteControls } from '../../../components/maps/route-control';
-import { RouteInfo } from '../../../components/maps/route-info';
-import { LocationSearchBoxes } from '../../../components/maps/location-search-boxes';
+import { useRouteCalculation } from '@/hooks/maps/useRouteCalculation';
+import { useLocationPermission } from '@/hooks/maps/useLocationPermission';
+import { RouteControls } from '@/components/maps/route-control';
+import { RouteInfo } from '@/components/maps/route-info';
+import { LocationSearchBoxes } from '@/components/maps/location-search-boxes';
 
 const FALLBACK_INITIAL_CENTER = { latitude: 40.7128, longitude: -74.006 };
 const INITIAL_ZOOM = 20;
