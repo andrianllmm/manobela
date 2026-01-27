@@ -97,6 +97,24 @@ export const useUploadPlayback = ({
     };
   }, [player]);
 
+  useEffect(() => {
+    if (!player) return;
+    let rafId = 0;
+    let mounted = true;
+    const tick = () => {
+      if (!mounted) return;
+      if (player.playing && Number.isFinite(player.currentTime)) {
+        setPlaybackPositionMs(Math.max(0, Math.round(player.currentTime * 1000)));
+      }
+      rafId = requestAnimationFrame(tick);
+    };
+    rafId = requestAnimationFrame(tick);
+    return () => {
+      mounted = false;
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [player]);
+
   const handlePlaybackLayout = useCallback((event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
     setPlaybackView({ width, height });

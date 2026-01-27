@@ -39,7 +39,7 @@ export default function UploadsScreen() {
   const [expandedGroups, setExpandedGroups] = useState<Record<number, boolean>>({});
   const [showOverlays, setShowOverlays] = useState(true);
   const player = useVideoPlayer(selectedVideo?.uri ?? null, (player) => {
-    player.timeUpdateEventInterval = 0.1;
+    player.timeUpdateEventInterval = 0.05;
   });
   const {
     groups,
@@ -60,6 +60,7 @@ export default function UploadsScreen() {
     selectedVideoUri: selectedVideo?.uri,
     showOverlays,
     player,
+    holdMs: 200,
   });
 
   return (
