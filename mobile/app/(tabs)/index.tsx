@@ -12,6 +12,7 @@ import { MetricsDisplay } from '@/components/metrics/metrics-display';
 import { Text } from '@/components/ui/text';
 import { useSettings } from '@/hooks/useSettings';
 import { useCoordinationStore } from '@/stores/coordinationStore';
+import { speak } from '@/services/speech';
 
 export default function MonitorScreen() {
   useKeepAwake();
@@ -99,6 +100,10 @@ export default function MonitorScreen() {
       router.push('/(tabs)/maps');
       // Reset coordination flag after a delay
       setTimeout(() => setCoordinating(false), 1000);
+      // Play audio prompt if speech alerts are enabled
+      if (settings.enableSpeechAlerts) {
+        speak('Where do you want to go?');
+      }
     }
   }, [
     sessionState,
@@ -106,6 +111,7 @@ export default function MonitorScreen() {
     requestNavigationStart,
     setCoordinating,
     router,
+    settings.enableSpeechAlerts,
   ]);
 
   // Listen for requests to start monitoring from navigation
