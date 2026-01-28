@@ -1,4 +1,4 @@
-import { View, ActivityIndicator, ScrollView, Pressable, Image, StyleSheet } from 'react-native';
+import { View, ScrollView, Pressable, Image, StyleSheet } from 'react-native';
 
 import { useMemo, useState } from 'react';
 import { VideoView, useVideoPlayer } from 'expo-video';
@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { FacialLandmarkOverlay } from '@/components/facial-landmark-overlay';
 import { ObjectDetectionOverlay } from '@/components/object-detection-overlay';
+import { SpinningLogo } from '@/components/spinning-logo';
 
 import { useSettings } from '@/hooks/useSettings';
 import { useVideoUpload } from '@/hooks/useVideoUpload';
@@ -103,12 +104,17 @@ export default function UploadsScreen() {
         </Button>
 
         {isUploading ? (
-          <Text className="text-sm text-muted-foreground">Upload progress: {uploadProgress}%</Text>
+          <View className="flex-row items-center gap-2">
+            <SpinningLogo width={20} height={20} />
+            <Text className="text-sm text-muted-foreground">
+              Upload progress: {uploadProgress}%
+            </Text>
+          </View>
         ) : null}
 
         {isProcessing ? (
           <View className="flex-row items-center gap-2">
-            <ActivityIndicator />
+            <SpinningLogo width={20} height={20} />
             <Text className="text-sm text-muted-foreground">
               Upload complete. Processing video frames...
             </Text>

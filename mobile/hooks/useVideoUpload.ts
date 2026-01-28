@@ -117,11 +117,13 @@ export const useVideoUpload = (apiBaseUrl: string): UseVideoUploadResult => {
       const clampedProgress = Math.min(100, Math.max(0, progress));
       setUploadProgress(clampedProgress);
       if (clampedProgress >= 100) {
+        setIsUploading(false);
         setIsProcessing(true);
       }
     };
 
     xhr.upload.onload = () => {
+      setIsUploading(false);
       setIsProcessing(true);
     };
 
